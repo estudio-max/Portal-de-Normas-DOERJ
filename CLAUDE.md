@@ -45,6 +45,22 @@ A etapa que traduz **data → GUID**. Os caminhos abaixo responderam 404:
 no HTML estático — o que sugere que a listagem vem por JavaScript ou por um
 bloco que não é servido nessa URL.
 
+Segunda rodada, no mesmo dia, para não repetir o caminho depois:
+
+| Onde procurei | O que achei |
+|---|---|
+| HTML do módulo, lista de `<script>` | só scripts do tema: jQuery, carrossel, lightbox. Nenhum seletor de data, nenhuma chamada a `mostra_edicao` |
+| `themes/IOERJV2/js/main.js` e `governo.js` | 404 disfarçado de 200, com 230 bytes |
+| Todos os `href` internos da página | nada aponta para edição do Diário |
+| `/do/` | existe, mas responde 403; é de onde o portal serve CSS do tema |
+| 12 pontos de entrada dentro de `/do/` | todos 404 |
+
+Conclusão provisória: a listagem de edições não está nesta página. Ou ela mora
+noutro host (`transparencia.ioerj.com.br` e o `asps/login.asp` ainda não foram
+examinados), ou depende de sessão, ou vem de uma chamada que o HTML estático não
+revela. Achar isso passa por abrir o site num navegador e olhar as requisições
+de rede, e não por adivinhar nomes de arquivo.
+
 ---
 
 ## Recebido de outra sessão, **ainda não verificado**
