@@ -56,16 +56,28 @@ jobs:
           # aqui, a execução morria antes de tentar baixar coisa alguma.
 
       - name: Baixar
+        # O agendamento sem data cobre os últimos três dias, e não só um.
+        #
+        # A edição do dia é gerada por volta das 4h da manhã, então às 9h ela
+        # já existe: coletar "ontem" deixaria a de hoje para nunca. E a janela
+        # de três dias faz a execução seguinte recuperar sozinha o que uma
+        # falha de rede tiver perdido, sem ninguém precisar notar. Custa três
+        # consultas de listagem, porque o downloader pula o que já tem.
+        #
+        # A data é a do Rio, não a do runner. O runner vive em UTC, e às 21h
+        # de Brasília os dois já discordam sobre que dia é hoje.
+        env:
+          TZ: America/Sao_Paulo
         run: |
           INICIO="${{ inputs.inicio }}"
           FIM="${{ inputs.fim }}"
 
-          if [ -z "$INICIO" ]; then
-            INICIO=$(date -u -d "yesterday" +%Y-%m-%d)
+          if [ -z "$INICIO" ] && [ -z "$FIM" ]; then
+            INICIO=$(date -d "3 days ago" +%Y-%m-%d)
+            FIM=$(date +%Y-%m-%d)
           fi
-          if [ -z "$FIM" ]; then
-            FIM="$INICIO"
-          fi
+          [ -z "$INICIO" ] && INICIO="$FIM"
+          [ -z "$FIM" ] && FIM="$INICIO"
 
           echo "Coletando de $INICIO a $FIM"
           python tools/doerj_download.py --inicio "$INICIO" --fim "$FIM" --destino dados/
