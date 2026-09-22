@@ -41,7 +41,7 @@ chega sabendo só o assunto também.
 |---|---|---|
 | RF-01 | Baixar o PDF do DOERJ Poder Executivo de uma data | **implementado** |
 | RF-02 | Baixar um intervalo de datas, para recompor o acervo | **implementado** |
-| RF-03 | Rodar sozinho todo dia útil, sem ninguém apertar botão | parcial — falta provar no Actions |
+| RF-03 | Rodar sozinho todo dia útil, sem ninguém apertar botão | **implementado** |
 | RF-04 | Não gravar arquivo vazio nem dar sucesso falso | **implementado** |
 | RF-05 | Guardar o PDF original, íntegro, como prova | pendente |
 | RF-06 | Extrair o texto do PDF | pendente |
@@ -87,7 +87,7 @@ que "conferido por pessoa".
 | RNF-05 | Acessível, WCAG 2.1 AA | é serviço público |
 | RNF-06 | Abre em conexão ruim e em telefone modesto | idem |
 | RNF-07 | Roda na hospedagem que já existe, sem servidor novo | custo |
-| RNF-08 | Falha de coleta avisa alguém, não fica quieta | um mês sem coletar só se descobre quando alguém procura e não acha |
+| RNF-08 | Falha de coleta avisa alguém, não fica quieta | **parcial.** O Actions manda e-mail quando a execução falha, e a janela de três dias recupera perda pontual. O que ainda não existe é alarme para coleta que para de rodar por completo |
 
 ---
 
@@ -96,7 +96,7 @@ que "conferido por pessoa".
 | Fase | Passa quando |
 |---|---|
 | 1 | passou em 2026-09-22: edições 171 a 173, e fim de semana como "sem edição" |
-| 2 | O mesmo, rodando no GitHub Actions, com o PDF no artifact |
+| 2 | passou em 2026-09-22: 33 segundos, arquivos idênticos aos locais |
 | 3 | O PDF sobrevive aos 7 dias do artifact |
 | 4 | De um Diário de verdade saem os atos, com número e data certos, conferidos à mão contra o PDF |
 | 5 | Busca por texto devolve o ato certo |

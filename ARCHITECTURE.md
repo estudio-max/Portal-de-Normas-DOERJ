@@ -116,6 +116,7 @@ rápido exclui exatamente quem mais precisa dele.
 | AD-05 | Python na coleta e na extração | é onde vivem as bibliotecas de PDF |
 | AD-10 | Coleta sem dependência externa | roda em qualquer Python 3, sem `pip install`, e não quebra quando uma biblioteca muda |
 | AD-11 | O token vem da listagem, não é remontado | o timestamp embutido é regra do IOERJ, que pode mudar amanhã |
+| AD-12 | A automação roda no GitHub Actions | provado em 2026-09-22. Cron na hospedagem e runner próprio ficam como saída se o IOERJ passar a recusar endereço estrangeiro |
 
 ## Decisões adiadas
 
@@ -124,4 +125,4 @@ rápido exclui exatamente quem mais precisa dele.
 | AD-06 | Onde os PDFs ficam em definitivo | Fase 3 |
 | AD-07 | Banco: MySQL da hospedagem, ou SQLite com busca embutida | Fase 5 |
 | AD-08 | Linguagem da API | Fase 5 |
-| AD-09 | Onde a automação roda: Actions, cron da hospedagem, runner próprio | depende do teste da Fase 2 |
+

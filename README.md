@@ -10,8 +10,11 @@ não acha. O projeto existe para resolver esse pedaço.
 
 > **Repositório privado** por enquanto. Abrir ou não é decisão pendente.
 >
-> **A coleta funciona.** Falta o resto: extrair o texto, separar os atos, banco,
-> busca e interface.
+> **A coleta funciona e roda sozinha**, dias úteis às 9h de Brasília. Falta o
+> resto: extrair o texto, separar os atos, banco, busca e interface.
+>
+> Atenção: hoje os PDFs coletados vivem 7 dias e somem. Resolver isso é a
+> próxima fase.
 
 ---
 
@@ -21,8 +24,8 @@ não acha. O projeto existe para resolver esse pedaço.
 |---|---|---|
 | 0 | Esqueleto, documentação e agendamento | concluída |
 | 1 | Downloader do Diário | **concluída** |
-| 2 | Provar que a coleta roda no GitHub Actions | em teste |
-| 3 | Onde os PDFs ficam em definitivo | pendente |
+| 2 | Provar que a coleta roda no GitHub Actions | **concluída** |
+| 3 | Onde os PDFs ficam em definitivo | **é a próxima** |
 | 4 | Extração de texto e separação dos atos | pendente |
 | 5 | Banco e API | pendente |
 | 6 | Interface | pendente |
