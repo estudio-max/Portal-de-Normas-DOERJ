@@ -423,5 +423,5 @@ trocas que interessam à lente 2, e não para todas.
 | DP-14 | A classificação temática precisa de revisão humana antes de publicar? | (a) sim, fila de curadoria; (b) não, com marca de automático | Médio |
 | DP-06 | Qual a licença do repositório | — | Baixo |
 | DP-07 | Como o portal deixa claro que o PDF não tem valor legal | (a) aviso fixo na página de cada ato; (b) só na página "sobre" | **Alto — é o risco jurídico do projeto** |
-| DP-10 | Onde o banco de produção vai morar, e quem faz backup | (a) MySQL da hospedagem; (b) outro | **Alto — hoje só existe banco de teste** |
+| DP-10 | Onde o banco de produção vai morar, e quem faz backup | (a) MySQL da HostGator, onde o domínio já está; (b) outro | **Alto — hoje só existe banco de teste** |
 | DP-09 | O que fazer se o IOERJ quebrar os links | (a) aceitar e viver de texto; (b) guardar PDF só das normas, não do Diário inteiro | Médio — é a única defesa que devolveria o arquivo |

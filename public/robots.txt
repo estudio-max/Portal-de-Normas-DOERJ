@@ -1,0 +1,20 @@
+# Este acervo não deve ser indexado.
+#
+# O Diário Oficial é publicação oficial e o conteúdo é público. O que muda aqui
+# é a forma: um PDF por dia, que exige saber a data, é uma coisa; um acervo de
+# anos com busca por texto é outra; indexado por buscador, é uma terceira.
+#
+# CPF, documento de identidade e endereço residencial de particular já não
+# entram no banco — são removidos na extração. Ainda assim, nome de pessoa
+# aparece em ato de pessoal, e isso é público por dever de transparência, não
+# para virar resultado de busca sobre a pessoa.
+#
+# Vale dizer o que isto é e o que não é: robots.txt é pedido, não cadeado.
+# Buscador que respeita a convenção obedece. Raspador que não quiser obedecer
+# não obedece. A medida que pesa mais é o cabeçalho X-Robots-Tag, no .htaccess
+# ao lado, e nem ele impede quem já decidiu ignorar.
+#
+# Não indexar reduz alcance. Não é proteção.
+
+User-agent: *
+Disallow: /

@@ -70,7 +70,7 @@ só o assunto também.
 | RF-17 | Identificar a vinculada que publicou | **implementado** |
 | RF-30 | Mascarar CPF e documento de identidade antes de gravar | **implementado** |
 | RF-33 | Ocultar endereço de pessoa natural em auto de infração | **implementado** |
-| RF-31 | Não ser indexado por buscador | pendente |
+| RF-31 | Não ser indexado por buscador | **implementado** — falta subir |
 | RF-32 | Ler a capa e registrar quem comandava cada pasta em cada data | **implementado** |
 
 **RF-17 existe porque o Diário esconde a autoria.** FAPERJ, UERJ, UENF, CECIERJ
@@ -214,12 +214,12 @@ origem de cada número fica a um clique.
 | RNF-04 | Nenhuma credencial no repositório | regra do projeto | **implementado** |
 | RNF-05 | Acessível, WCAG 2.1 AA | é serviço público | pendente |
 | RNF-06 | Abre em conexão ruim e em telefone modesto | idem | pendente |
-| RNF-07 | Roda na hospedagem que já existe | custo | pendente |
+| RNF-07 | Roda na hospedagem que já existe | custo | domínio de pé em `doerj.fanara.com.br` |
 | RNF-08 | Falha de coleta avisa alguém | um mês sem coletar só se descobre tarde | parcial |
 | RNF-09 | Todo número mostra de qual ato saiu | ver abaixo | pendente |
 | RNF-10 | O que foi deduzido por regra automática aparece marcado | proveniência não é enfeite | parcial |
 | RNF-11 | Nenhum CPF, documento de identidade ou endereço residencial no banco | LGPD, e minimização: o que não se guarda não vaza | **implementado** |
-| RNF-12 | `robots.txt`, `<meta robots>` e `X-Robots-Tag` recusando indexação | mesma razão do RNF-11 | pendente |
+| RNF-12 | `robots.txt`, `<meta robots>` e `X-Robots-Tag` recusando indexação | mesma razão do RNF-11 | **implementado** — falta subir |
 
 **RNF-09 é o que separa esta ferramenta de uma planilha.** Se a tela diz que a
 SECTI aplicou determinado valor num programa, tem que haver o caminho até o

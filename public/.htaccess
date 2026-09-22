@@ -1,0 +1,63 @@
+# Configuração do Apache para hospedagem compartilhada (cPanel / HostGator).
+#
+# Boa parte disto é decalcada do `.htaccess` do Mapa de CT&I, que roda na mesma
+# hospedagem e já passou por produção. O que é próprio daqui vem marcado.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # HTTPS obrigatório. Quatro condições e não uma: a hospedagem termina o TLS
+    # num proxy, e se nenhuma delas reconhecer a conexão já cifrada, a
+    # requisição seria desviada para si mesma e o site sai do ar em laço.
+    #
+    # E 302, não 301. Laço de 301 fica no cache de quem visitou, some do
+    # servidor sem sumir de quem já foi atingido, e desfazer deixa de ser mexer
+    # num arquivo para virar pedir a cada pessoa que limpe o cache.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteCond %{HTTP:X-Forwarded-SSL} !=on
+    RewriteCond %{SERVER_PORT} !=443
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=302,L]
+
+    # Front controller: o que não for arquivo existente vai para index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    # ---------------------------------------------------------------------
+    # PRÓPRIO DESTE PROJETO: recusa de indexação.
+    #
+    # O `robots.txt` ao lado pede que o buscador não rastreie. Este cabeçalho
+    # pede que não indexe, e é o que pesa mais: robots.txt só evita a visita,
+    # e uma URL que apareça num link de terceiro pode ser indexada sem nunca
+    # ter sido rastreada. `noindex` chega junto com a página.
+    #
+    # Está aqui, no servidor, e não numa etiqueta dentro do HTML, porque daqui
+    # ele cobre também PDF, JSON e qualquer resposta que não seja página.
+    #
+    # `always` para valer inclusive em resposta de erro: página 404 indexada é
+    # tão indexada quanto qualquer outra.
+    Header always set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+    # ---------------------------------------------------------------------
+
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "same-origin"
+
+    # HSTS só sobre conexão já cifrada: anunciá-lo por http é anunciar para
+    # quem já está no meio. Sem preload de propósito — entrar na lista dos
+    # navegadores é decisão de domínio, não de aplicação, e sair dela demora
+    # meses.
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on'"
+</IfModule>
+
+# Não listar diretórios
+Options -Indexes
+
+# Segunda barreira, caso o document root fique acima de public/. A primeira
+# barreira é a estrutura de diretórios; confie nela.
+<FilesMatch "\.(md|sql|ini|log|bak|py|sh|ps1|neon|dist|jsonl|csv)$">
+    Require all denied
+</FilesMatch>

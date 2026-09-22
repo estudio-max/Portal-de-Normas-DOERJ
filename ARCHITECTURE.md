@@ -33,8 +33,14 @@ portal-normas-doerj/
 │   ├── 003-...             revogação parcial
 │   └── provar_esquema.py   roda as consultas do portal contra dado real
 ├── backend/api/            vazio
+├── public/                 o que vai para o servidor
+│   ├── .htaccess           HTTPS, cabeçalhos e recusa de indexação
+│   ├── robots.txt
+│   └── index.php           página de espera
 ├── src/                    vazio
-└── docs/                   vazio
+└── docs/
+    ├── publicacao.md       como subir, e o que falta decidir
+    └── titulares-*.csv     quem comandou cada pasta, por data
 ```
 
 A coleta funciona e foi provada contra o site. Da extração para frente, nada.
