@@ -368,6 +368,43 @@ custeio, `4490` investimento, `3350` e `4450` repasse a terceiro setor.
 valor ficam em pedaços distantes, e casar os dois por expressão regular produz
 número errado com aparência de certo — que aqui é o pior resultado possível.
 
+## DP-11 respondida: os nomes da pasta, conferidos no Diário
+
+A pergunta era como a pasta de CT&I se chamava em cada época, e eu não ia supor.
+O João trouxe da internet uma tabela de secretários, e ela virou **hipótese a
+conferir**, não fato.
+
+O método ficou mais barato do que o previsto. Eu ia caçar decreto de nomeação, um
+por um. Não precisa: **a capa de toda edição traz a lista completa dos titulares
+de todas as pastas**, com o nome de cada uma como era naquele dia. O
+`tools/doerj_titulares.py` lê isso. Cinco downloads resolveram cinco períodos.
+
+### O que o Diário diz
+
+| Data | Nome da pasta, como publicado | Titular |
+|---|---|---|
+| 2010-06-15 | Secretaria de Estado de **Ciência e Tecnologia** | Luiz Edmundo Horta Barbosa Costa Leite |
+| 2013-06-14 | Secretaria de Estado de **Ciência e Tecnologia** | Gustavo Reis Ferreira |
+| 2018-06-15 | Secretaria de Estado de **Ciência, Tecnologia, Inovação e Desenvolvimento Social** | Gabriell Carvalho Neves Franco dos Santos |
+| 2021-06-15 | Secretaria de Estado de **Ciência, Tecnologia e Inovação** | Sérgio Luiz Costa Azevedo Filho |
+| 2024-09-16 | Secretaria de Estado de **Ciência, Tecnologia e Inovação** | Anderson Luis de Moraes |
+| 2026-09-22 | Secretaria de Estado de **Ciência, Tecnologia e Inovação** | Antonio Claudio Lucas da Nóbrega |
+
+Cinco de cinco batem com a tabela trazida, e o Diário ainda completa o que ela
+abreviava: "Gustavo Tutuca" é Gustavo Reis Ferreira, "Dr. Serginho" é Sérgio Luiz
+Costa Azevedo Filho, e "Gabriell Neves" é Gabriell Carvalho Neves Franco dos
+Santos. Nome completo importa quando o portal vai ser lido por órgão de controle.
+
+### O que ainda falta
+
+Estas são seis fotografias, não a linha do tempo. As datas exatas de troca ficam
+entre uma foto e outra, e a tabela trazida tem sobreposições — Tutuca aparece em
+2013-2014, 2015 e 2017, e Pedro Fernandes em 2017-2018.
+
+Fechar isso é busca binária: quando duas datas mostram titulares diferentes,
+baixa-se o meio. Cada troca custa cerca de 5 downloads. Vale fazer para as
+trocas que interessam à lente 2, e não para todas.
+
 ## Dúvidas e decisões pendentes
 
 | # | Pergunta | Alternativas | Impacto |
@@ -377,7 +414,10 @@ número errado com aparência de certo — que aqui é o pior resultado possíve
 | DP-03 | Abrir o repositório ao público agora que a coleta funciona? | (a) abrir; (b) seguir privado | Médio |
 | ~~DP-04~~ | ~~Onde os PDFs ficam em definitivo~~ | (c) só texto, PDF por referência | resolvido em 2026-09-22 |
 | ~~DP-05~~ | ~~Que atos entram?~~ | **tudo, inclusive movimentação de pessoal** | resolvido em 2026-09-22 |
-| DP-11 | Quais foram os nomes da pasta de CT&I ao longo do tempo | não sei, e não vou supor. Método: coletar uma edição por semestre desde 2010 e ler os cabeçalhos de órgão | **Alto — sem isso a lente 2 perde o histórico anterior ao nome atual** |
+| ~~DP-11~~ | ~~Nomes da pasta de CT&I ao longo do tempo~~ | respondido pela fonte primária em 2026-09-22 | resolvido |
+| DP-15 | Mascarar também endereço residencial de particular | autos de infração trazem nome + CPF + endereço. O CPF já sai; o endereço fica | **Alto — é o mesmo risco do CPF** |
+| DP-16 | O ID funcional deve ser mascarado? | é como o Estado identifica servidor em ato oficial, e aparece em 15% das matérias | Médio |
+| DP-17 | Guardar no banco a contagem de documentos ocultados por matéria | serve de trilha de auditoria da LGPD | Baixo |
 | DP-12 | Até que ano recompor o acervo, para a lente 2 | 250 edições por ano; 2010 foi testado e funciona. Agora é conta de texto, não de 20 GB de PDF | Alto — decide o esforço de coleta |
 | DP-13 | O que conta como tema de CT&I | lista de inclusão e exclusão, conferida à mão | Alto — define a lente 1 |
 | DP-14 | A classificação temática precisa de revisão humana antes de publicar? | (a) sim, fila de curadoria; (b) não, com marca de automático | Médio |

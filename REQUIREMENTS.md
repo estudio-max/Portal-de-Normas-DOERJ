@@ -68,10 +68,42 @@ só o assunto também.
 | RF-14 | Dizer de onde veio e quando foi coletado | pendente |
 | RF-16 | Dizer que o PDF não tem valor legal | pendente |
 | RF-17 | Identificar a vinculada que publicou | **implementado** |
+| RF-30 | Mascarar CPF e documento de identidade antes de gravar | **implementado** |
+| RF-31 | Não ser indexado por buscador | pendente |
+| RF-32 | Ler a capa e registrar quem comandava cada pasta em cada data | **implementado** |
 
 **RF-17 existe porque o Diário esconde a autoria.** FAPERJ, UERJ, UENF, CECIERJ
 e FAETEC publicam sob "Secretaria de Estado de Ciência, Tecnologia e Inovação".
 Sem separar, não há como dar a cada uma o seu espaço.
+
+**RF-30 e RF-31 andam juntos, e o motivo é o mesmo.**
+
+O Diário é publicação oficial e o CPF está lá, à vista. A diferença é o que
+acontece depois: um PDF por dia, que exige saber a data, é uma coisa. Um acervo
+de anos com busca por texto é outra — o mesmo dado passa a permitir montar o
+histórico de uma pessoa em segundos. Indexado por buscador, vira terceira coisa.
+
+A LGPD trata dessa diferença. Publicidade legal não autoriza reuso ilimitado.
+E a finalidade deste projeto é transparência sobre **o que o Estado decidiu e
+gastou** — para isso o CPF de ninguém é necessário.
+
+O nome do servidor fica. Nomeação e exoneração são atos públicos, e esconder o
+nome esvaziaria a transparência que motiva o projeto. Sai o documento, que não
+acrescenta nada à fiscalização e acrescenta tudo ao risco.
+
+**O mascaramento acontece na extração, antes de gravar.** O banco nunca vê o
+número. Mascarar na tela deixaria o dado no banco, no backup e no dump, e
+bastaria uma consulta mal feita para ele reaparecer. O que não se guarda não
+vaza. O PDF original continua no IOERJ, com tudo, para quem tiver base legal.
+
+Medido em 8 edições de 2010 a 2026: **1.249 documentos ocultados** em 2.012
+matérias. O próprio IOERJ já publica parte dos CPFs mascarados — `041.XXX.127-96`
+— o que mostra que a direção é a mesma.
+
+**Sobre o RF-31, uma ressalva honesta:** `robots.txt` é pedido, não cadeado.
+Buscador que respeita a convenção obedece; raspador determinado não. A medida
+que vale mais é o cabeçalho `X-Robots-Tag: noindex`, e nem ele impede quem não
+quiser obedecer. Não indexar reduz alcance; não é proteção.
 
 ### As três lentes
 
@@ -167,6 +199,8 @@ origem de cada número fica a um clique.
 | RNF-08 | Falha de coleta avisa alguém | um mês sem coletar só se descobre tarde | parcial |
 | RNF-09 | Todo número mostra de qual ato saiu | ver abaixo | pendente |
 | RNF-10 | O que foi deduzido por regra automática aparece marcado | proveniência não é enfeite | parcial |
+| RNF-11 | Nenhum CPF ou documento de identidade no banco | LGPD, e minimização: o que não se guarda não vaza | **implementado** |
+| RNF-12 | `robots.txt`, `<meta robots>` e `X-Robots-Tag` recusando indexação | mesma razão do RNF-11 | pendente |
 
 **RNF-09 é o que separa esta ferramenta de uma planilha.** Se a tela diz que a
 SECTI aplicou determinado valor num programa, tem que haver o caminho até o

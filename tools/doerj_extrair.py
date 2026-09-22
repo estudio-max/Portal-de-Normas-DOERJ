@@ -76,6 +76,9 @@ try:
 except ImportError:  # pragma: no cover
     sys.exit("Falta o PyMuPDF. Instale com: pip install pymupdf")
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from lgpd import mascarar  # noqa: E402
+
 
 # Onde uma coluna acaba e a outra começa, numa página de 822 pontos de largura.
 BORDAS = (270, 510)
@@ -498,12 +501,17 @@ def extrair(caminho: Path) -> list[dict]:
 
     registros = []
     for m in materias:
-        texto = juntar_hifen(m["texto"])
+        # O mascaramento acontece aqui, antes de qualquer gravação: o JSONL e o
+        # banco nunca chegam a ver o documento. Mascarar na tela deixaria o dado
+        # no banco, no backup e no dump. Ver `lgpd.py`.
+        texto, ocultados = mascarar(juntar_hifen(m["texto"]))
         atos = achar_atos(texto)
         primeiro = atos[0] if atos else {}
 
         cabecalho = primeiro.get("cabecalho")
         ementa = achar_ementa(texto, cabecalho) if cabecalho else None
+        ementa, ocultados_na_ementa = mascarar(ementa)
+        ocultados += ocultados_na_ementa
 
         registros.append({
             "id_ioerj": m["id_ioerj"],
@@ -524,6 +532,7 @@ def extrair(caminho: Path) -> list[dict]:
             # campo que o Diário publique como ementa. Ver o cabeçalho.
             "ementa_inferida": bool(ementa),
             "atos_no_texto": len(atos),
+            "documentos_ocultados": ocultados,
             "outros_atos": atos[1:] if len(atos) > 1 else [],
             "texto": re.sub(r"\n{3,}", "\n\n", texto).strip(),
         })
