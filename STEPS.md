@@ -13,9 +13,9 @@ etapa funcional concluída.
 | 0 | Esqueleto, documentação e agendamento | **concluída** |
 | 1 | Downloader do DOERJ Poder Executivo | **concluída** |
 | 2 | Provar que o download roda no GitHub Actions | **concluída** |
-| 3 | Onde os PDFs ficam em definitivo | **é a próxima** |
-| 4 | Extração de texto e identificação dos atos | pendente |
-| 5 | Banco e API (`backend/db`, `backend/api`) | pendente |
+| 3 | Onde os PDFs ficam em definitivo | **concluída** |
+| 4 | Extração de texto e identificação dos atos | **é a próxima** |
+| 5 | Banco e API (`backend/db`, `backend/api`) | esquema pronto; API pendente |
 | 6 | Interface, no formato do portal da UFF (`src`) | pendente |
 
 ---
@@ -102,19 +102,64 @@ Coletando de 2026-09-19 a 2026-09-22
 2 gravado(s), 0 já existia(m), 0 falha(s)
 ```
 
-## Fase 3 — onde os PDFs ficam. É a próxima
+## Fase 3 — decidida em 2026-09-22: guarda-se o texto, não o PDF
 
-Artifact de 7 dias resolve o desenvolvimento e não resolve o produto: um portal
-de normas precisa do histórico. Decidir entre armazenamento na hospedagem,
-bucket, ou só o texto extraído com o PDF referenciado na origem.
+**O PDF não fica.** Fica o texto extraído e o endereço do arquivo na origem, do
+mesmo jeito que o Portal de Normas e Atos da UFF faz com `boletins.url_pdf` e
+`ato_corpo.texto`.
 
-Agora que a coleta anda sozinha, **o relógio está correndo**: a cada dia útil
-entram uns 3 MB que somem em sete dias. Enquanto a Fase 3 não fechar, o que o
-agendamento junta é descartável.
+Isso derruba de 750 MB a 1,5 GB por ano para alguns megabytes, e torna a
+recomposição do acervo desde 2010 uma conta de texto, não de 20 GB de PDF.
 
-Para dimensionar: 250 dias úteis por ano, 3 a 6 MB por dia, dá algo entre 750 MB
-e 1,5 GB por ano só da Parte I. Recompor desde 2010 seria da ordem de 10 a 20
-GB, e isso muda a resposta da DP-04.
+### Por que isto funciona aqui, e o teste que provou
+
+Referenciar arquivo na origem só presta se o endereço durar. Testei: **a chave
+da edição de 15/01/2010 continuava servindo o arquivo em 22/09/2026.** O
+timestamp que aparece no token mora na listagem, não na chave do PDF.
+
+### O que se perde, e está escrito para não ser redescoberto com espanto
+
+O endereço aponta para servidor de terceiro. Se o IOERJ mudar o esquema, todos os
+links quebram de uma vez e não há cópia para onde correr. Diferente da UFF, cujo
+`url_pdf` aponta para um servidor da própria UFF.
+
+Duas defesas baratas ficaram no esquema, e nenhuma devolve o arquivo:
+
+- `edicoes.guid` guarda o identificador cru, então uma mudança na forma de montar
+  a URL se conserta com um `UPDATE`, não com uma recoleta;
+- `edicoes.sha256` guarda a impressão digital do PDF de onde o texto saiu. Sem o
+  arquivo em mãos, é o que permite provar depois que o texto publicado veio
+  daqueles bytes.
+
+Se o acervo de origem sumir, o portal continua funcionando como texto e perde a
+prova. É a troca que a decisão implica.
+
+### O que ficou pronto
+
+`backend/db/001-esquema.sql`, decalcado do modelo da UFF: `edicoes`, `atos`,
+`ato_corpo` e `ato_relacoes`. Nomes iguais aos de lá onde o sentido é o mesmo,
+para quem cuida dos dois portais não ter que aprender duas modelagens.
+
+Três coisas que o esquema carrega de propósito, e que são lições da UFF:
+
+- `ementa_inferida` — ementa deduzida não é ementa publicada;
+- `status_origem` e `ato_relacoes.origem` — "detectado automaticamente" não é a
+  mesma coisa que "conferido por pessoa", e quem lê tem direito de saber qual é;
+- `ato_destino_id` pode ser nulo — dá para registrar "revoga o Decreto nº 45.452"
+  antes de saber qual registro é esse, que é como a curadoria acontece.
+
+### Prova
+
+```
+python backend/db/provar_esquema.py
+```
+
+Cria o banco do zero, aplica o esquema, insere as três edições coletadas e três
+decretos de verdade do Diário de 22/09/2026, e roda as sete consultas que o
+portal vai fazer. Inclui o caso real do Decreto 50.485, que revoga o 45.452 de
+2015.
+
+Rodou contra MySQL 8.4 em 2026-09-22. Passou.
 
 ## Fases 4 a 6
 
@@ -131,8 +176,9 @@ e serve de referência de modelagem — `boletins`, `ato_funcoes` e afins.
 | ~~DP-01~~ | ~~Trazer o downloader ou reconstruir?~~ | reconstruído em 2026-09-22 | resolvido |
 | ~~DP-02~~ | ~~Quem cria o repositório?~~ | criado em 2026-09-22 | resolvido |
 | DP-03 | Abrir o repositório ao público agora que a coleta funciona? | (a) abrir; (b) seguir privado | Médio |
-| DP-04 | Onde os PDFs ficam em definitivo | (a) hospedagem; (b) bucket; (c) só texto, PDF por referência | Alto — decide a Fase 3 e o custo mensal |
+| ~~DP-04~~ | ~~Onde os PDFs ficam em definitivo~~ | (c) só texto, PDF por referência | resolvido em 2026-09-22 |
 | DP-05 | Que atos entram? Só normas, ou também atos de pessoal | (a) só normas; (b) tudo | Alto — muda a extração e o tamanho do banco |
 | DP-06 | Qual a licença do repositório | — | Baixo |
 | DP-07 | Como o portal deixa claro que o PDF não tem valor legal | (a) aviso fixo na página de cada ato; (b) só na página "sobre" | **Alto — é o risco jurídico do projeto** |
-| DP-08 | Até que ano recompor o acervo | testei 2010 e funcionou | Médio — decide o volume inicial |
+| DP-08 | Até que ano recompor o acervo | testei 2010 e funcionou | Médio — agora é conta de texto, não de 20 GB de PDF |
+| DP-09 | O que fazer se o IOERJ quebrar os links | (a) aceitar e viver de texto; (b) guardar PDF só das normas, não do Diário inteiro | Médio — é a única defesa que devolveria o arquivo |

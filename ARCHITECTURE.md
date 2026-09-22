@@ -91,11 +91,20 @@ regex custaria uma nova visita ao site do Estado.
 
 ### Banco e API
 
-A modelagem tem referência pronta: o Portal de Normas e Atos da UFF, cujos
-dumps de 2001 a 2014 estão à mão, com tabelas como `boletins` e `ato_funcoes`.
-Vale estudar antes de desenhar do zero. **Referência, não cópia:** o que serve à
-UFF não serve necessariamente ao Executivo estadual, que tem outros tipos de
-ato e outra estrutura de órgãos.
+Esquema em `backend/db/001-esquema.sql`, decalcado do Portal de Normas e Atos da
+UFF. Quatro tabelas:
+
+| Tabela | Guarda | Equivale na UFF a |
+|---|---|---|
+| `edicoes` | um caderno do Diário, de um dia, com o endereço do PDF | `boletins` |
+| `atos` | cada norma, com tipo, número, data, órgão e ementa | `atos` |
+| `ato_corpo` | o texto inteiro, à parte | `ato_corpo` |
+| `ato_relacoes` | o que altera ou revoga o quê | `ato_relacoes` |
+
+Onde o DOERJ é diferente, a modelagem diverge: `boletins` virou `edicoes` porque
+o mesmo dia tem vários cadernos e às vezes edição extra; `sigla` de unidade da
+UFF virou `orgao` mais `orgao_slug`, porque a mesma secretaria muda de grafia ao
+longo dos anos; e o bloco de campos do SEI não existe aqui.
 
 ### Interface
 
@@ -117,12 +126,15 @@ rápido exclui exatamente quem mais precisa dele.
 | AD-10 | Coleta sem dependência externa | roda em qualquer Python 3, sem `pip install`, e não quebra quando uma biblioteca muda |
 | AD-11 | O token vem da listagem, não é remontado | o timestamp embutido é regra do IOERJ, que pode mudar amanhã |
 | AD-12 | A automação roda no GitHub Actions | provado em 2026-09-22. Cron na hospedagem e runner próprio ficam como saída se o IOERJ passar a recusar endereço estrangeiro |
+| AD-13 | O PDF não é guardado. Ficam o texto e o endereço na origem | a chave do IOERJ é permanente, provado com a edição de 2010. Derruba o custo de GB por ano para MB |
+| AD-14 | MySQL, com `FULLTEXT` | é o que a hospedagem tem e o que o portal da UFF usa. Busca embutida sem serviço de índice à parte |
+| AD-15 | Modelagem decalcada da UFF | quem cuida dos dois portais não aprende duas modelagens |
 
 ## Decisões adiadas
 
 | # | Decisão | Quando decidir |
 |---|---|---|
-| AD-06 | Onde os PDFs ficam em definitivo | Fase 3 |
-| AD-07 | Banco: MySQL da hospedagem, ou SQLite com busca embutida | Fase 5 |
+
+
 | AD-08 | Linguagem da API | Fase 5 |
 

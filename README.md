@@ -13,8 +13,8 @@ não acha. O projeto existe para resolver esse pedaço.
 > **A coleta funciona e roda sozinha**, dias úteis às 9h de Brasília. Falta o
 > resto: extrair o texto, separar os atos, banco, busca e interface.
 >
-> Atenção: hoje os PDFs coletados vivem 7 dias e somem. Resolver isso é a
-> próxima fase.
+> **O PDF não fica guardado.** Ficam o texto extraído e o endereço do arquivo
+> na origem, como o portal da UFF faz.
 
 ---
 
@@ -25,9 +25,9 @@ não acha. O projeto existe para resolver esse pedaço.
 | 0 | Esqueleto, documentação e agendamento | concluída |
 | 1 | Downloader do Diário | **concluída** |
 | 2 | Provar que a coleta roda no GitHub Actions | **concluída** |
-| 3 | Onde os PDFs ficam em definitivo | **é a próxima** |
-| 4 | Extração de texto e separação dos atos | pendente |
-| 5 | Banco e API | pendente |
+| 3 | Onde os PDFs ficam em definitivo | **concluída** |
+| 4 | Extração de texto e separação dos atos | **é a próxima** |
+| 5 | Banco e API | esquema pronto; API pendente |
 | 6 | Interface | pendente |
 
 O detalhe de cada fase está em [STEPS.md](STEPS.md).
@@ -68,6 +68,21 @@ aqui serve para consulta, busca e pesquisa, e não substitui a publicação
 oficial. O portal precisa dizer isso onde a pessoa lê, e não num rodapé.
 
 O caminho completo até o PDF, com o truque da chave, está no [CLAUDE.md](CLAUDE.md).
+
+## O banco
+
+Esquema em [001-esquema.sql](backend/db/001-esquema.sql), decalcado do Portal de
+Normas e Atos da UFF: `edicoes`, `atos`, `ato_corpo` e `ato_relacoes`.
+
+Para conferir que ele faz o que promete, contra um MySQL de verdade:
+
+```
+python backend/db/provar_esquema.py
+```
+
+O teste cria o banco do zero, insere três decretos reais do Diário de 22/09/2026
+e roda as consultas do portal, incluindo a pergunta que mais importa: **essa
+norma ainda vale?**
 
 ---
 

@@ -61,6 +61,10 @@ ao mesmo tempo.
 - Dia com edição extra **repete o nome do caderno**. 15/01/2024 tem duas
   "Parte I (Poder Executivo)".
 - O servidor manda `Content-Disposition: filename="Nao_Possui_Valor_Legal_*.pdf"`.
+- **A chave é permanente.** A chave da edição de 15/01/2010 continuava servindo
+  o arquivo em 22/09/2026, e a de hoje continuou valendo horas depois de
+  capturada. O timestamp mora no token da listagem, não na chave do PDF. É isso
+  que torna possível referenciar o PDF na origem em vez de guardá-lo.
 
 ### Este PDF não tem valor legal
 
