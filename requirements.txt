@@ -1,0 +1,8 @@
+# Dependências das ferramentas que leem PDF e escrevem no banco.
+#
+# A coleta (tools/doerj_download.py) NÃO precisa de nada disto: ela roda só com
+# a biblioteca padrão, de propósito, porque é o que o GitHub Actions executa
+# todo dia útil. Instalar isto no runner seria carregar peso para não usar.
+
+pymupdf>=1.24    # leitura do PDF, na extração
+pymysql>=1.1     # carga e relações. Consulta parametrizada, não SQL montado à mão

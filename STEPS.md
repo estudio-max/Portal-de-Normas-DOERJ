@@ -15,8 +15,9 @@ etapa funcional concluída.
 | 2 | Provar que o download roda no GitHub Actions | **concluída** |
 | 3 | Onde os PDFs ficam em definitivo | **concluída** |
 | 4 | Extração de texto e identificação dos atos | **concluída** |
-| 5 | Banco e API (`backend/db`, `backend/api`) | **é a próxima** — esquema pronto, falta carregar e servir |
+| 5 | Banco e API (`backend/db`, `backend/api`) | banco **concluído**; API pendente |
 | 6 | Interface, no formato do portal da UFF (`src`) | pendente |
+| 7 | Agendar extração e carga junto da coleta | pendente |
 
 ---
 
@@ -243,6 +244,76 @@ Resultado nas três edições coletadas: **850 matérias, 166 atos numerados.**
 - Texto com espaçamento decorativo sai quebrado: "DEPARTAMENTO DE TRÂN S I TO".
   É artefato do PDF, e não tem conserto barato.
 
+## Fase 5 — banco carregado. Concluída em 2026-09-22, menos a API
+
+```
+python tools/doerj_carregar.py extraido/*.jsonl --pdf dados
+python tools/doerj_relacoes.py
+```
+
+850 atos e 20 relações no banco, a partir das três edições coletadas. O
+encadeamento inteiro roda do banco vazio: migrações, extração, carga, relações.
+
+### O esquema estava errado, e a Fase 4 provou
+
+A `001` foi escrita antes de eu ter lido um Diário inteiro, e supunha que todo
+ato tem número, como na UFF. A medição derrubou a suposição: **entre 77% e 87%
+das matérias não têm número.** Com `numero NOT NULL`, carregar um Diário
+significaria jogar fora quatro quintos dele, ou inventar número para o que não
+tem. A `002` deixa `tipo` e `numero` nulos e acrescenta `id_ioerj`.
+
+`id_ioerj` é a chave natural da origem, e sai de graça: como é `UNIQUE`,
+recarregar a mesma edição atualiza as mesmas linhas em vez de duplicar o Diário.
+Provado rodando a carga duas vezes: 850 novos, depois 850 atualizados.
+
+### O detector de relações acha menos do que poderia, de propósito
+
+78 das 850 matérias mencionam alguma relação, e só 20 viraram registro. A
+diferença não é falha: é que **menção não é ação.**
+
+| Trecho | O que é |
+|---|---|
+| "ALTERA A PORTARIA SEDES Nº 102" | relação. Este ato faz isso |
+| "o valor do Anexo I do Decreto nº 50.240, alterado..." | contexto. Outro ato alterou, em outro momento |
+| "regulamentada pelo Decreto nº 43.510" | contexto. Quem regulamenta é o outro |
+
+Um detector que aceitasse as três avisaria que normas vivas foram revogadas. Num
+portal de normas esse é o pior erro possível: alguém deixa de cumprir regra que
+vale, ou cumpre regra que caiu, e o erro tem a nossa assinatura.
+
+Deixar relação verdadeira escapar custa um campo vazio. Inventar relação falsa
+custa o portal inteiro. Os dois erros não pesam igual, e o código reflete isso.
+
+Depois de medir os 18 casos que escapavam, 5 eram falha minha e foram
+corrigidos: sigla de duas palavras ("PORTARIA DER SEI Nº 136"), "ALTERA O ART. 1º
+DA...", "ALTERA, EM PARTE,", "N.º" com ponto, e "DISPÕE SOBRE A ALTERAÇÃO DA...".
+Os outros 13 eram rejeição correta: "ALTERA A LOTAÇÃO DO PROCURADOR" não altera
+norma nenhuma.
+
+### Revogar um artigo não é revogar a norma
+
+O caso que obrigou uma coluna nova. A Resolução SES/SMS 4.281 faz duas coisas
+com a Resolução Conjunta 564, de 2018:
+
+```
+Fica alterado o art. 1º da Resolução Conjunta ... nº 564
+Fica revogado  o art. 2º da Resolução Conjunta ... nº 564
+```
+
+As duas relações são verdadeiras, e **a Resolução 564 continua em vigor.** O que
+caiu foi um artigo.
+
+Sem a coluna `parcial`, um portal que lesse `tipo_relacao = 'Revoga'` marcaria a
+564 como revogada e diria a quem consulta que uma norma viva está morta. A `003`
+acrescenta `parcial` e `dispositivo`, e a regra para quem for escrever a tela é
+uma linha: **só revogação com `parcial = 0` derruba o status da norma alvo.**
+
+A consulta que prova isso está no `provar_esquema.py`, item 8.
+
+### O que falta na fase
+
+A API. O banco responde às consultas do portal, mas nada serve isso ainda.
+
 ## Dúvidas e decisões pendentes
 
 | # | Pergunta | Alternativas | Impacto |
@@ -255,4 +326,5 @@ Resultado nas três edições coletadas: **850 matérias, 166 atos numerados.**
 | DP-06 | Qual a licença do repositório | — | Baixo |
 | DP-07 | Como o portal deixa claro que o PDF não tem valor legal | (a) aviso fixo na página de cada ato; (b) só na página "sobre" | **Alto — é o risco jurídico do projeto** |
 | DP-08 | Até que ano recompor o acervo | testei 2010 e funcionou | Médio — agora é conta de texto, não de 20 GB de PDF |
+| DP-10 | Onde o banco de produção vai morar, e quem faz backup | (a) MySQL da hospedagem; (b) outro | **Alto — hoje só existe banco de teste** |
 | DP-09 | O que fazer se o IOERJ quebrar os links | (a) aceitar e viver de texto; (b) guardar PDF só das normas, não do Diário inteiro | Médio — é a única defesa que devolveria o arquivo |

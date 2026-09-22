@@ -48,8 +48,8 @@ chega sabendo só o assunto também.
 | RF-07 | Separar o Diário do dia em atos individuais | parcial — separa matérias; matéria com vários atos ainda é uma só |
 | RF-08 | Identificar tipo, número, data e órgão de cada ato | **implementado** para os atos numerados |
 | RF-09 | Extrair a ementa | parcial — deduzida, e marcada como tal |
-| RF-10 | Guardar tudo em banco com busca por texto | esquema pronto e provado; falta o que preencher |
-| RF-11 | Ligar um ato ao que ele altera ou revoga | pendente |
+| RF-10 | Guardar tudo em banco com busca por texto | **implementado** |
+| RF-11 | Ligar um ato ao que ele altera ou revoga | parcial — detecta o declarado, e distingue revogação parcial de total |
 | RF-12 | Busca por número, por data, por órgão, por assunto | pendente |
 | RF-13 | Página de cada ato, com link para o PDF de origem | pendente |
 | RF-14 | Dizer de onde veio e quando foi coletado | pendente |
@@ -99,7 +99,7 @@ que "conferido por pessoa".
 | 2 | passou em 2026-09-22: 33 segundos, arquivos idênticos aos locais |
 | 3 | decidido em 2026-09-22: não se guarda PDF. Esquema pronto e provado |
 | 4 | passou em 2026-09-22: 850 matérias de 3 edições, 166 atos, conferidos contra o PDF |
-| 5 | Busca por texto devolve o ato certo |
+| 5 | banco: passou em 2026-09-22, 850 atos e 20 relações. API: pendente |
 | 6 | Uma pessoa que nunca viu o portal acha uma norma pelo assunto |
 
 ---

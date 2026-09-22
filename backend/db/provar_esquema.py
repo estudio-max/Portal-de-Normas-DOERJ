@@ -50,7 +50,10 @@ if os.environ.get("DOERJ_SENHA"):
     LIGACAO.append("-p" + os.environ["DOERJ_SENHA"])
 ARGS = LIGACAO + [BANCO]
 
-ESQUEMA = Path(__file__).resolve().parent / "001-esquema.sql"
+# Todas as migrações, na ordem do nome. O teste aplica o esquema inteiro, e não
+# só a primeira: prova que a sequência de migrações roda do zero, que é como
+# ela vai rodar em produção.
+MIGRACOES = sorted(Path(__file__).resolve().parent.glob("*.sql"))
 
 
 def roda(sql, esperar_erro=False):
@@ -88,11 +91,12 @@ inicial = subprocess.run(
 if inicial.returncode != 0:
     sys.exit("Não consegui falar com o MySQL:\n" + inicial.stderr.strip()[:400])
 
-with ESQUEMA.open("rb") as f:
-    aplicar = subprocess.run(ARGS, stdin=f, capture_output=True, text=True)
-if aplicar.returncode != 0:
-    sys.exit("O esquema não aplicou:\n" + aplicar.stderr.strip()[:600])
-print("  esquema aplicado")
+for migracao in MIGRACOES:
+    with migracao.open("rb") as f:
+        aplicar = subprocess.run(ARGS, stdin=f, capture_output=True, text=True)
+    if aplicar.returncode != 0:
+        sys.exit(f"{migracao.name} não aplicou:\n" + aplicar.stderr.strip()[:600])
+print(f"  {len(MIGRACOES)} migrações aplicadas")
 
 print("=== inserindo as tres edicoes reais coletadas hoje ===")
 edicoes = [
@@ -229,6 +233,35 @@ print(roda(
 
 print("7. Edicoes ainda sem extracao, que e a fila da Fase 4:")
 print(roda("SELECT data_pub, numero FROM edicoes WHERE extraido_em IS NULL ORDER BY data_pub;"))
+
+print("8. Revogacao parcial NAO pode derrubar a norma alvo:")
+roda(
+    "INSERT INTO atos (id, tipo, numero, ano, data_pub, orgao_slug, ementa) VALUES "
+    "('2018-10-17-resolucao-564', 'Resolução Conjunta', '564', 2018, '2018-10-17', "
+    "'ses-sms', 'Constitui o Comitê Gestor dos Serviços do SUS.');"
+)
+roda(
+    "INSERT INTO ato_relacoes (ato_id, tipo_relacao, ato_destino_texto, "
+    "ato_destino_id, parcial, dispositivo) VALUES "
+    "('2026-09-22-decreto-50485', 'Revoga', 'Resolução Conjunta nº 564', "
+    "'2018-10-17-resolucao-564', 1, 'art. 2º');"
+)
+# A consulta que a tela do portal tem que fazer. Contar revogação parcial como
+# total faria o portal declarar morta uma norma que continua valendo.
+print(roda(
+    "SELECT d.id, d.status, "
+    "  EXISTS(SELECT 1 FROM ato_relacoes r WHERE r.ato_destino_id = d.id "
+    "         AND r.tipo_relacao = 'Revoga' AND r.parcial = 0) AS revogada_de_vez, "
+    "  (SELECT GROUP_CONCAT(dispositivo) FROM ato_relacoes r "
+    "   WHERE r.ato_destino_id = d.id AND r.parcial = 1) AS so_estes_artigos "
+    "FROM atos d WHERE d.id = '2018-10-17-resolucao-564';"
+))
+total = roda(
+    "SELECT COUNT(*) FROM ato_relacoes r WHERE r.ato_destino_id = "
+    "'2018-10-17-resolucao-564' AND r.tipo_relacao='Revoga' AND r.parcial = 0;"
+).split()[-1]
+assert total == "0", "revogacao parcial contou como total"
+print("   a norma alvo continua viva, como tem que ser")
 
 print("=== apagar o ato leva o corpo e a relacao junto? ===")
 antes = roda("SELECT COUNT(*) FROM ato_corpo;").split()[-1]

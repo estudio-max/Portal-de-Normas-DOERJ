@@ -27,7 +27,7 @@ não acha. O projeto existe para resolver esse pedaço.
 | 2 | Provar que a coleta roda no GitHub Actions | **concluída** |
 | 3 | Onde os PDFs ficam em definitivo | **concluída** |
 | 4 | Extração de texto e separação dos atos | **concluída** |
-| 5 | Banco e API | **é a próxima** |
+| 5 | Banco e API | banco pronto; **API é a próxima** |
 | 6 | Interface | pendente |
 
 O detalhe de cada fase está em [STEPS.md](STEPS.md).
@@ -84,6 +84,26 @@ própria Imprensa Oficial**, e é ele que marca onde uma acaba e outra começa.
 Nem toda matéria é um ato numerado. Entre 13% e 23% são; o resto é movimentação
 de pessoal, despacho e retificação. A ferramenta guarda tudo e marca a
 diferença, porque decidir o que entra no portal não é trabalho de extrator.
+
+
+## Do PDF ao banco
+
+```
+python tools/doerj_extrair.py  dados/2026/09/*.pdf
+python tools/doerj_carregar.py extraido/*.jsonl --pdf dados
+python tools/doerj_relacoes.py
+```
+
+Rodar duas vezes não duplica nada: o `Id:` do IOERJ é chave única, então
+recarregar atualiza as mesmas linhas.
+
+### Uma regra para quem for escrever a tela
+
+**Só revogação com `parcial = 0` derruba o status da norma alvo.**
+
+Um ato pode revogar o art. 2º de uma resolução sem revogar a resolução. Tratar
+os dois casos como um faria o portal dizer que uma norma viva está morta — que é
+exatamente o erro que este projeto existe para não cometer.
 
 
 ## O banco

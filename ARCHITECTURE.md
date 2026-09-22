@@ -24,9 +24,13 @@ portal-normas-doerj/
 │   └── download-diario.yml coleta agendada, dias úteis às 9h
 ├── tools/
 │   ├── doerj_download.py   a coleta. Só biblioteca padrão
-│   └── doerj_extrair.py    PDF -> JSONL, uma linha por matéria
+│   ├── doerj_extrair.py    PDF -> JSONL, uma linha por matéria
+│   ├── doerj_carregar.py   JSONL -> banco, idempotente
+│   └── doerj_relacoes.py   acha o que altera ou revoga o quê
 ├── backend/db/
 │   ├── 001-esquema.sql     4 tabelas, decalcadas da UFF
+│   ├── 002-...             tipo e número nulos, mais o Id do IOERJ
+│   ├── 003-...             revogação parcial
 │   └── provar_esquema.py   roda as consultas do portal contra dado real
 ├── backend/api/            vazio
 ├── src/                    vazio
@@ -102,8 +106,8 @@ de qualquer coisa tocar dado publicado.
 
 ### Banco e API
 
-Esquema em `backend/db/001-esquema.sql`, decalcado do Portal de Normas e Atos da
-UFF. Quatro tabelas:
+Esquema em `backend/db/`, aplicado na ordem do nome do arquivo. Decalcado do
+Portal de Normas e Atos da UFF. Quatro tabelas:
 
 | Tabela | Guarda | Equivale na UFF a |
 |---|---|---|
@@ -143,6 +147,9 @@ rápido exclui exatamente quem mais precisa dele.
 | AD-16 | A matéria é separada pelo `Id:` do IOERJ | é marcador da origem, não heurística nossa. E serve de chave natural para reimportar |
 | AD-17 | A extração escreve JSONL, não SQL | dá para conferir antes de tocar em dado publicado |
 | AD-18 | O que não é reconhecido é guardado, não descartado | decidir o que entra no portal é da DP-05, não do extrator |
+| AD-19 | PyMySQL no que escreve no banco | consulta parametrizada. Montar SQL com texto de PDF é onde mora esse tipo de bug |
+| AD-20 | Relação só entra quando o ato **declara** que a faz | voz passiva e oração adjetiva descrevem, não agem. Inventar revogação falsa custa mais que perder uma verdadeira |
+| AD-21 | Revogação de artigo é `parcial = 1` | revogar o art. 2º não revoga a norma. Só `parcial = 0` derruba o status do alvo |
 
 ## Decisões adiadas
 

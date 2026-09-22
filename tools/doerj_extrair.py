@@ -132,6 +132,22 @@ FIM_DA_EMENTA = re.compile(
 NOME_DO_ARQUIVO = re.compile(r"^(\d{4}-\d{2}-\d{2})-(.+?)(?:-(\d+))?$")
 
 
+MINUSCULAS = {"de", "da", "do", "das", "dos", "e", "em", "a", "o"}
+
+
+def como_nome(bruto: str) -> str:
+    """'ORDEM DE SERVIÇO' vira 'Ordem de Serviço', e não 'Ordem De Serviço'.
+
+    O `.title()` do Python não sabe português e sobe a preposição junto. Isto
+    aparece na tela para quem consulta, então vale acertar.
+    """
+    palavras = re.sub(r"\s+", " ", bruto.strip()).lower().split(" ")
+    return " ".join(
+        p if i and p in MINUSCULAS else p.capitalize()
+        for i, p in enumerate(palavras)
+    )
+
+
 def sem_acento(t: str) -> str:
     return unicodedata.normalize("NFKD", t).encode("ascii", "ignore").decode()
 
@@ -292,7 +308,7 @@ def achar_atos(texto: str) -> list[dict]:
         if not em_caixa_alta(linha):
             continue
 
-        tipo = re.sub(r"\s+", " ", m.group("tipo")).title()
+        tipo = como_nome(m.group("tipo"))
         atos.append({
             "tipo": tipo,
             "sigla": (m.group("sigla") or "").strip(" /") or None,
@@ -436,6 +452,11 @@ def autoteste() -> int:
 
     assert juntar_hifen("PROVI-\nDÊNCIAS") == "PROVIDÊNCIAS"
     assert juntar_hifen("fim.\nOutra") == "fim.\nOutra"
+
+    assert como_nome("ORDEM DE SERVIÇO") == "Ordem de Serviço"
+    assert como_nome("RESOLUÇÃO CONJUNTA") == "Resolução Conjunta"
+    assert como_nome("DECRETO") == "Decreto"
+    assert como_nome("INSTRUÇÃO   NORMATIVA") == "Instrução Normativa"
 
     m = CABECALHO.match("DECRETO Nº 50.485 DE 21 DE SETEMBRO DE 2026")
     assert m and m.group("numero") == "50.485", m

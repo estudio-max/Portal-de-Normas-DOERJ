@@ -51,9 +51,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          # Sem `cache: pip`. O downloader não tem dependência nenhuma, e o
-          # cache do pip exige um requirements.txt para montar a chave. Com ele
-          # aqui, a execução morria antes de tentar baixar coisa alguma.
+          # Sem `cache: pip`, e sem passo de instalar dependência.
+          #
+          # O `requirements.txt` da raiz é das ferramentas que leem PDF e
+          # escrevem no banco. **A coleta não usa nenhuma delas**: roda só com a
+          # biblioteca padrão, de propósito, porque é ela que executa aqui todo
+          # dia útil. Instalar PyMuPDF e PyMySQL no runner seria carregar peso
+          # para não usar, e uma dependência a mais é uma forma a mais de a
+          # coleta parar por motivo que não tem nada a ver com o Diário.
 
       - name: Baixar
         # O agendamento sem data cobre os últimos três dias, e não só um.
