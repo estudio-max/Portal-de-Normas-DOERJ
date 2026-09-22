@@ -1,0 +1,107 @@
+# Coleta do Diário Oficial do Estado do Rio de Janeiro, Poder Executivo.
+#
+# ESTE FLUXO AINDA NÃO TEM O QUE EXECUTAR. O downloader (tools/doerj_download.py)
+# não existe no repositório, e por isso o primeiro passo confere a presença dele
+# e para com uma mensagem explicando, em vez de falhar com um traceback de
+# Python que não diz nada a quem abrir o log daqui a três meses.
+#
+# Ver a Fase 1 do STEPS.md.
+
+name: Baixar o Diário
+
+on:
+  schedule:
+    # 09:00 em Brasília. O agendamento do GitHub é em UTC, e o Rio está em
+    # UTC-3 o ano inteiro desde que o horário de verão acabou, em 2019.
+    - cron: "0 12 * * 1-5"
+
+  workflow_dispatch:
+    inputs:
+      inicio:
+        description: "Data inicial, AAAA-MM-DD. Em branco, usa ontem."
+        required: false
+        type: string
+      fim:
+        description: "Data final, AAAA-MM-DD. Em branco, usa a inicial."
+        required: false
+        type: string
+
+# Duas execuções ao mesmo tempo bateriam no site do Estado em paralelo, e o
+# RNF-01 diz que a coleta é educada com a origem.
+concurrency:
+  group: download-diario
+  cancel-in-progress: false
+
+jobs:
+  baixar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Conferir se o downloader existe
+        run: |
+          if [ ! -f tools/doerj_download.py ]; then
+            echo "::error::tools/doerj_download.py não existe neste repositório."
+            echo ""
+            echo "Este fluxo está agendado, mas não há o que executar."
+            echo "A Fase 1 do STEPS.md está bloqueada: ou o downloader que já"
+            echo "funciona é trazido para cá, ou ele precisa ser reconstruído."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Baixar
+        run: |
+          INICIO="${{ inputs.inicio }}"
+          FIM="${{ inputs.fim }}"
+
+          if [ -z "$INICIO" ]; then
+            INICIO=$(date -u -d "yesterday" +%Y-%m-%d)
+          fi
+          if [ -z "$FIM" ]; then
+            FIM="$INICIO"
+          fi
+
+          echo "Coletando de $INICIO a $FIM"
+          python tools/doerj_download.py --inicio "$INICIO" --fim "$FIM" --destino dados/
+
+      - name: Conferir que veio PDF de verdade
+        # O endpoint do IOERJ responde 200 com corpo vazio quando a chave é
+        # inválida. Sem esta conferência, um mês de arquivos vazios passa por
+        # um mês de execuções verdes. Ver RF-04.
+        run: |
+          set -e
+          quantos=$(find dados -name "*.pdf" -size +10k 2>/dev/null | wc -l)
+          if [ "$quantos" -eq 0 ]; then
+            echo "::error::Nenhum PDF com tamanho plausível em dados/."
+            find dados -type f -printf "%s\t%p\n" 2>/dev/null || true
+            exit 1
+          fi
+          for arquivo in $(find dados -name "*.pdf"); do
+            if [ "$(head -c 4 "$arquivo")" != "%PDF" ]; then
+              echo "::error::$arquivo não começa com %PDF."
+              exit 1
+            fi
+          done
+          echo "$quantos arquivo(s) conferido(s)."
+
+      - name: Guardar os PDFs
+        # Sete dias resolvem o desenvolvimento e não resolvem o produto. O
+        # destino permanente é a Fase 3 do STEPS.md.
+        uses: actions/upload-artifact@v4
+        with:
+          name: diario-${{ github.run_id }}
+          path: dados/
+          retention-days: 7
+          if-no-files-found: error

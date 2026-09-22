@@ -1,0 +1,20 @@
+# PDFs do diário: 80 páginas por dia não cabem em repositório.
+# Eles vivem como artifact do GitHub Actions (7 dias) e no destino final
+# definido na Fase 3.
+/dados/
+
+# Ambiente
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# Banco
+*.sql.gz
+!database/seed/*.sql
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
