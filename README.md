@@ -8,6 +8,9 @@ Hoje o acervo é público e quase inacessível. Para ler um decreto é preciso s
 o dia da publicação, abrir o PDF daquele dia e procurar. Quem não sabe a data
 não acha. O projeto existe para resolver esse pedaço.
 
+> **Repositório privado** até a coleta provar que funciona. Código de raspagem
+> público antes de funcionar convida cópia de algo quebrado.
+>
 > **Estado: começando.** A documentação e o esqueleto estão de pé. Nada foi
 > coletado ainda, e a primeira fase está bloqueada. O porquê está logo abaixo.
 

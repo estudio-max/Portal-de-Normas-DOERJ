@@ -25,6 +25,11 @@ etapa funcional concluída.
 Estrutura de pastas, `.gitignore`, `CLAUDE.md` com o que se sabe do site,
 `README.md` com a tabela de etapas, e o fluxo do GitHub Actions.
 
+O repositório está em `estudio-max/Portal-de-Normas-DOERJ`, **privado**, e o
+fluxo de coleta está **desativado** enquanto a Fase 1 não destravar. Ele falharia
+toda manhã de dia útil, e falha diária vira ruído que ninguém lê. Religar é um
+botão em Actions.
+
 Junto veio uma investigação do site do IOERJ, registrada no `CLAUDE.md`. O achado
 que muda o desenho do downloader: **`mostra_edicao.php` devolve `Erro.` quando
 não recebe chave, mas devolve corpo vazio com status 200 quando a chave é
@@ -64,8 +69,9 @@ desenho de automação muda.
 Teste: rodar o fluxo manualmente com uma data conhecida antes de confiar no
 agendamento. Se falhar, as saídas são cron na hospedagem ou runner self-hosted.
 
-Enquanto a Fase 1 estiver bloqueada, esta não roda — mas o fluxo já está escrito
-e o teste é de um clique quando houver o que testar.
+Enquanto a Fase 1 estiver bloqueada, esta não roda, e o fluxo está desativado no
+GitHub. Quando houver downloader: religar em Actions, disparar à mão com uma data
+conhecida, e olhar o resultado.
 
 ## Fase 3 — onde os PDFs ficam
 

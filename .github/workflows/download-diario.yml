@@ -5,6 +5,11 @@
 # e para com uma mensagem explicando, em vez de falhar com um traceback de
 # Python que não diz nada a quem abrir o log daqui a três meses.
 #
+# Por isso ele está DESATIVADO no GitHub (Actions > Baixar o Diário > Enable
+# workflow religa). Deixá-lo ligado faria o agendamento falhar toda manhã de dia
+# útil, e uma caixa de entrada que recebe falha todo dia é uma caixa que para de
+# ler falha.
+#
 # Ver a Fase 1 do STEPS.md.
 
 name: Baixar o Diário
