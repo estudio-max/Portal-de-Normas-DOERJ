@@ -415,7 +415,7 @@ trocas que interessam à lente 2, e não para todas.
 | ~~DP-04~~ | ~~Onde os PDFs ficam em definitivo~~ | (c) só texto, PDF por referência | resolvido em 2026-09-22 |
 | ~~DP-05~~ | ~~Que atos entram?~~ | **tudo, inclusive movimentação de pessoal** | resolvido em 2026-09-22 |
 | ~~DP-11~~ | ~~Nomes da pasta de CT&I ao longo do tempo~~ | respondido pela fonte primária em 2026-09-22 | resolvido |
-| DP-15 | Mascarar também endereço residencial de particular | autos de infração trazem nome + CPF + endereço. O CPF já sai; o endereço fica | **Alto — é o mesmo risco do CPF** |
+| ~~DP-15~~ | ~~Mascarar endereço residencial de particular~~ | **sim, em auto de infração. Endereço de pessoa jurídica fica** | resolvido em 2026-09-22 |
 | DP-16 | O ID funcional deve ser mascarado? | é como o Estado identifica servidor em ato oficial, e aparece em 15% das matérias | Médio |
 | DP-17 | Guardar no banco a contagem de documentos ocultados por matéria | serve de trilha de auditoria da LGPD | Baixo |
 | DP-12 | Até que ano recompor o acervo, para a lente 2 | 250 edições por ano; 2010 foi testado e funciona. Agora é conta de texto, não de 20 GB de PDF | Alto — decide o esforço de coleta |

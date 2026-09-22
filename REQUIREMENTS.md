@@ -69,6 +69,7 @@ só o assunto também.
 | RF-16 | Dizer que o PDF não tem valor legal | pendente |
 | RF-17 | Identificar a vinculada que publicou | **implementado** |
 | RF-30 | Mascarar CPF e documento de identidade antes de gravar | **implementado** |
+| RF-33 | Ocultar endereço de pessoa natural em auto de infração | **implementado** |
 | RF-31 | Não ser indexado por buscador | pendente |
 | RF-32 | Ler a capa e registrar quem comandava cada pasta em cada data | **implementado** |
 
@@ -99,6 +100,24 @@ vaza. O PDF original continua no IOERJ, com tudo, para quem tiver base legal.
 Medido em 8 edições de 2010 a 2026: **1.249 documentos ocultados** em 2.012
 matérias. O próprio IOERJ já publica parte dos CPFs mascarados — `041.XXX.127-96`
 — o que mostra que a direção é a mesma.
+
+**RF-33 e a linha que ele traça.** Auto de infração traz nome, CPF e endereço
+de casa. Fiscalização ambiental e de trânsito não é objeto deste portal, então o
+endereço residencial não precisa ficar fácil de achar aqui — ele continua no PDF
+do IOERJ, para quem tiver necessidade legítima.
+
+Mas **endereço de empresa fica.** A LGPD protege pessoa natural, e autuação
+contra empresa é exatamente o que o portal existe para mostrar: esconder onde
+fica a fábrica autuada protegeria quem não precisa de proteção. O documento ao
+lado do nome diz o que é — CNPJ é empresa, CPF é pessoa — e quando aparecem os
+dois vale o mais protetivo.
+
+Medido nas 8 edições: 91 endereços de pessoa ocultados, 11 de pessoa jurídica
+preservados. Entre eles, a Prefeitura de Itaboraí autuada pelo INEA.
+
+E fora de auto de infração o endereço nunca sai: ali "ENDEREÇO:" é onde se
+entrega proposta de licitação ou onde é a sessão, e apagar isso tiraria do
+portal informação que ele existe para mostrar. São 33 casos no corpus.
 
 **Sobre o RF-31, uma ressalva honesta:** `robots.txt` é pedido, não cadeado.
 Buscador que respeita a convenção obedece; raspador determinado não. A medida
@@ -199,7 +218,7 @@ origem de cada número fica a um clique.
 | RNF-08 | Falha de coleta avisa alguém | um mês sem coletar só se descobre tarde | parcial |
 | RNF-09 | Todo número mostra de qual ato saiu | ver abaixo | pendente |
 | RNF-10 | O que foi deduzido por regra automática aparece marcado | proveniência não é enfeite | parcial |
-| RNF-11 | Nenhum CPF ou documento de identidade no banco | LGPD, e minimização: o que não se guarda não vaza | **implementado** |
+| RNF-11 | Nenhum CPF, documento de identidade ou endereço residencial no banco | LGPD, e minimização: o que não se guarda não vaza | **implementado** |
 | RNF-12 | `robots.txt`, `<meta robots>` e `X-Robots-Tag` recusando indexação | mesma razão do RNF-11 | pendente |
 
 **RNF-09 é o que separa esta ferramenta de uma planilha.** Se a tela diz que a

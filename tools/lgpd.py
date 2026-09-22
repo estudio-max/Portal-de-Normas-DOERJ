@@ -56,8 +56,41 @@ ONZE_DIGITOS = re.compile(r"(?<!\d)(\d{11})(?!\d)")
 # "RG nº 12.345.678-9", "RG 32.183 CBMERJ"
 RG = re.compile(r"\b(RG|R\.G\.|IDENTIDADE)\s*n?[ºo°.]?\s*([\d][\d\.\-/]{4,})", re.I)
 
+# Auto de infração traz nome, CPF e **endereço de casa** de um particular.
+#
+# O endereço só sai aqui dentro. Fora do auto, "ENDEREÇO:" é local de entrega de
+# proposta, sala de sessão de licitação ou sede de empresa — informação que o
+# portal precisa mostrar. Medido em 2.012 matérias: 20 autos com endereço, e 32
+# outras ocorrências, todas institucionais.
+AUTO_DE_INFRACAO = re.compile(
+    r"AUTO DE INFRA[ÇC][ÃA]O|NOTIFICA[ÇC][ÃA]O DE INFRA[ÇC][ÃA]O|AUTO DE CONSTATA",
+    re.I,
+)
+
+# "ENDEREÇO: Estrada Circuito da Gameleira nº. 1.100 - Barra do Imbuí INFRAÇÃO:"
+# O campo acaba onde começa a próxima etiqueta em caixa alta.
+#
+# A etiqueta "ENDEREÇO" casa em qualquer caixa, mas **a detecção do fim do campo
+# não pode ignorar caixa**: com `re.I`, "Barra do Imbuí INFRAÇÃO:" casava como
+# se "Barra" fosse a próxima etiqueta, e metade do endereço sobrava na tela.
+ENDERECO_DO_AUTO = re.compile(
+    r"((?i:\bENDERE[ÇC]O)\s*:\s*)(.+?)(?=\s[A-ZÀ-Ü]{3,}[A-ZÀ-Ü\s/]{0,28}:|$)",
+    re.S,
+)
+
+# Quem é o autuado aparece logo antes do endereço. Esta é a janela onde
+# procurar, medida no formato que o INEA usa: "NOME: X CNPJ: Y ENDEREÇO: Z".
+JANELA_DO_AUTUADO = 200
+
+CNPJ = re.compile(r"\bCNPJ\b|\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b", re.I)
+
+# O CPF já foi mascarado quando esta conferência roda, então o que sobra para
+# reconhecer pessoa natural é a máscara e a etiqueta.
+CPF_NO_AUTO = re.compile(r"\bCPF\b|\*\*\*\.\*\*\*\.\*\*\*-\*\*", re.I)
+
 CPF_OCULTO = "***.***.***-**"
 RG_OCULTO = "[documento omitido]"
+ENDERECO_OCULTO = "[endereço omitido]"
 
 
 def cpf_valido(digitos: str) -> bool:
@@ -117,6 +150,33 @@ def mascarar(texto: str | None) -> tuple[str | None, int]:
         return f"{m.group(1)} {RG_OCULTO}"
 
     texto = RG.sub(some_rg, texto)
+
+    # O endereço de casa só sai dentro de auto de infração. Fiscalização
+    # ambiental e de trânsito não é o objeto deste portal, e o endereço
+    # residencial de um particular não precisa ficar fácil de achar.
+    #
+    # A condição não é firula: fora do auto, "ENDEREÇO:" é onde se entrega
+    # proposta de licitação ou onde é a sessão, e apagar isso tiraria do portal
+    # informação que ele existe para mostrar.
+    if AUTO_DE_INFRACAO.search(texto):
+        def some_endereco(m: re.Match) -> str:
+            nonlocal ocultados
+            # **Endereço de empresa fica.** A LGPD protege pessoa natural, e
+            # autuação ambiental contra empresa é exatamente o que o portal
+            # existe para mostrar: esconder onde fica a fábrica autuada seria
+            # proteger quem não precisa.
+            #
+            # Quem é autuado aparece logo antes do endereço, e o documento diz
+            # o que é: CNPJ é empresa, CPF é pessoa. Quando os dois aparecem,
+            # vale o mais protetivo.
+            antes = texto[max(0, m.start() - JANELA_DO_AUTUADO):m.start()]
+            if CNPJ.search(antes) and not CPF_NO_AUTO.search(antes):
+                return m.group(0)
+            ocultados += 1
+            return f"{m.group(1)}{ENDERECO_OCULTO}"
+
+        texto = ENDERECO_DO_AUTO.sub(some_endereco, texto)
+
     return texto, ocultados
 
 
@@ -157,6 +217,52 @@ def autoteste() -> int:
     t, n = mascarar("CARDOSO BAPTISTA, RG 32.183 CBMERJ, Id Funcional 3137444-1")
     assert "32.183" not in t and RG_OCULTO in t, t
     assert "3137444-1" in t, "id funcional não é documento de identidade"
+
+    # --- endereço: sai no auto de infração, fica em todo o resto ---
+    auto = ("INSTITUTO ESTADUAL DO AMBIENTE AUTO DE INFRAÇÃO Nº SUPPIBEAI/00133441 "
+            "NOME: ADILSON AJARA VILLOTE CPF Nº 090.070.707-03 "
+            "ENDEREÇO: Estrada Circuito da Gameleira nº. 1.100 - Barra do Imbuí "
+            "INFRAÇÃO: Dar início a instalação sem licença ambiental")
+    t, n = mascarar(auto)
+    assert "Gameleira" not in t and "Barra do Imbuí" not in t, t
+    assert ENDERECO_OCULTO in t, t
+    # O que o portal precisa mostrar continua lá: o órgão, o número do auto e a
+    # infração cometida. O nome também, porque autuação é ato público.
+    assert "SUPPIBEAI/00133441" in t and "sem licença ambiental" in t, t
+    assert "ADILSON AJARA VILLOTE" in t, t
+    assert n == 2, (n, t)
+
+    # Empresa autuada: o endereço fica. Autuação ambiental contra empresa é o
+    # que o portal existe para mostrar, e CNPJ não é dado pessoal.
+    empresa = ("AUTO DE INFRAÇÃO Nº SUPBGEAI/00160933 "
+               "NOME: J.J.A. 2007 COMÉRCIO DE PRODUTOS QUÍMICOS LTDA - ME. "
+               "CNPJ: 08.532.150/0001-58. ENDEREÇO: Rua Sabará, Lotes 5 e 6 "
+               "DESCRIÇÃO: Por destinar bombonas com resíduos perigosos")
+    t, n = mascarar(empresa)
+    assert "Rua Sabará" in t, t
+    assert n == 0, (n, t)
+
+    # Prefeitura também é pessoa jurídica.
+    orgao = ("AUTO DE INFRAÇÃO Nº SUPBGEAI/00150201 NOME: Prefeitura Municipal de "
+             "Itaboraí CNPJ Nº: 28.741.080/0001-55. ENDEREÇO: Praça Marechal Floriano "
+             "INFRAÇÃO: Artigo 76 da Lei nº 3.467")
+    t, n = mascarar(orgao)
+    assert "Praça Marechal Floriano" in t, t
+
+    # Quando aparecem os dois rótulos, vale o mais protetivo.
+    ambos = ("AUTO DE CONSTATAÇÃO CONVOCA: NOME: CARLOS ARTHUR ROALE MARTINS "
+             "CNPJ/CPF Nº: 090.070.707-03 ENDEREÇO: Rua das Flores, 42 CONVOCA:")
+    t, n = mascarar(ambos)
+    assert "Rua das Flores" not in t, t
+
+    # Endereço institucional fica, porque é o que o portal existe para mostrar.
+    for institucional in (
+        "entrega no setor de licitações, no endereço: Estrada do Caricó, 111, Galeão",
+        "DATA DA SESSÃO: 21/06/2018 ENDEREÇO: Av. Padre Leonel Franca, n° 248",
+        "AETEC CNPJ nº: 12.517.650/0001-98 Endereço: Rua Anita Peçanha, número 100",
+    ):
+        t, n = mascarar(institucional)
+        assert t == institucional and n == 0, (n, t)
 
     assert mascarar(None) == (None, 0)
     assert mascarar("") == ("", 0)
