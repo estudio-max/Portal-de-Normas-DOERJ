@@ -44,10 +44,10 @@ chega sabendo só o assunto também.
 | RF-03 | Rodar sozinho todo dia útil, sem ninguém apertar botão | **implementado** |
 | RF-04 | Não gravar arquivo vazio nem dar sucesso falso | **implementado** |
 | RF-05 | ~~Guardar o PDF original~~ — substituído: guardar o endereço e a impressão digital | **revisto em 2026-09-22** |
-| RF-06 | Extrair o texto do PDF | pendente |
-| RF-07 | Separar o Diário do dia em atos individuais | pendente |
-| RF-08 | Identificar tipo, número, data e órgão de cada ato | pendente |
-| RF-09 | Extrair a ementa | pendente |
+| RF-06 | Extrair o texto do PDF | **implementado** |
+| RF-07 | Separar o Diário do dia em atos individuais | parcial — separa matérias; matéria com vários atos ainda é uma só |
+| RF-08 | Identificar tipo, número, data e órgão de cada ato | **implementado** para os atos numerados |
+| RF-09 | Extrair a ementa | parcial — deduzida, e marcada como tal |
 | RF-10 | Guardar tudo em banco com busca por texto | esquema pronto e provado; falta o que preencher |
 | RF-11 | Ligar um ato ao que ele altera ou revoga | pendente |
 | RF-12 | Busca por número, por data, por órgão, por assunto | pendente |
@@ -98,7 +98,7 @@ que "conferido por pessoa".
 | 1 | passou em 2026-09-22: edições 171 a 173, e fim de semana como "sem edição" |
 | 2 | passou em 2026-09-22: 33 segundos, arquivos idênticos aos locais |
 | 3 | decidido em 2026-09-22: não se guarda PDF. Esquema pronto e provado |
-| 4 | De um Diário de verdade saem os atos, com número e data certos, conferidos à mão contra o PDF |
+| 4 | passou em 2026-09-22: 850 matérias de 3 edições, 166 atos, conferidos contra o PDF |
 | 5 | Busca por texto devolve o ato certo |
 | 6 | Uma pessoa que nunca viu o portal acha uma norma pelo assunto |
 

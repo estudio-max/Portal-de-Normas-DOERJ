@@ -23,8 +23,11 @@ portal-normas-doerj/
 ├── .github/workflows/
 │   └── download-diario.yml coleta agendada, dias úteis às 9h
 ├── tools/
-│   └── doerj_download.py   a coleta. Só biblioteca padrão
-├── backend/db/             vazio
+│   ├── doerj_download.py   a coleta. Só biblioteca padrão
+│   └── doerj_extrair.py    PDF -> JSONL, uma linha por matéria
+├── backend/db/
+│   ├── 001-esquema.sql     4 tabelas, decalcadas da UFF
+│   └── provar_esquema.py   roda as consultas do portal contra dado real
 ├── backend/api/            vazio
 ├── src/                    vazio
 └── docs/                   vazio
@@ -89,6 +92,14 @@ melhorar, e ela vai melhorar várias vezes, o reprocessamento roda em cima dos
 PDFs que já estão aqui. Se as duas etapas estivessem juntas, cada ajuste de
 regex custaria uma nova visita ao site do Estado.
 
+A separação em matérias é mecânica, não adivinhada: **o próprio IOERJ fecha cada
+matéria com um `Id:`**. O que é deduzido daí para frente — tipo, número, ementa —
+vai marcado como deduzido. Ver a Fase 4 do `STEPS.md`.
+
+A saída é JSONL, e não `INSERT`. Texto extraído é material de trabalho: vai ser
+refeito muitas vezes, e arquivo intermediário deixa conferir o resultado antes
+de qualquer coisa tocar dado publicado.
+
 ### Banco e API
 
 Esquema em `backend/db/001-esquema.sql`, decalcado do Portal de Normas e Atos da
@@ -129,6 +140,9 @@ rápido exclui exatamente quem mais precisa dele.
 | AD-13 | O PDF não é guardado. Ficam o texto e o endereço na origem | a chave do IOERJ é permanente, provado com a edição de 2010. Derruba o custo de GB por ano para MB |
 | AD-14 | MySQL, com `FULLTEXT` | é o que a hospedagem tem e o que o portal da UFF usa. Busca embutida sem serviço de índice à parte |
 | AD-15 | Modelagem decalcada da UFF | quem cuida dos dois portais não aprende duas modelagens |
+| AD-16 | A matéria é separada pelo `Id:` do IOERJ | é marcador da origem, não heurística nossa. E serve de chave natural para reimportar |
+| AD-17 | A extração escreve JSONL, não SQL | dá para conferir antes de tocar em dado publicado |
+| AD-18 | O que não é reconhecido é guardado, não descartado | decidir o que entra no portal é da DP-05, não do extrator |
 
 ## Decisões adiadas
 

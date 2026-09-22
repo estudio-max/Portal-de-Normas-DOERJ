@@ -14,8 +14,8 @@ etapa funcional concluída.
 | 1 | Downloader do DOERJ Poder Executivo | **concluída** |
 | 2 | Provar que o download roda no GitHub Actions | **concluída** |
 | 3 | Onde os PDFs ficam em definitivo | **concluída** |
-| 4 | Extração de texto e identificação dos atos | **é a próxima** |
-| 5 | Banco e API (`backend/db`, `backend/api`) | esquema pronto; API pendente |
+| 4 | Extração de texto e identificação dos atos | **concluída** |
+| 5 | Banco e API (`backend/db`, `backend/api`) | **é a próxima** — esquema pronto, falta carregar e servir |
 | 6 | Interface, no formato do portal da UFF (`src`) | pendente |
 
 ---
@@ -161,13 +161,87 @@ portal vai fazer. Inclui o caso real do Decreto 50.485, que revoga o 45.452 de
 
 Rodou contra MySQL 8.4 em 2026-09-22. Passou.
 
-## Fases 4 a 6
+## Fase 4 — extração. Concluída em 2026-09-22
 
-Extração e identificação dos atos, banco e API, interface. O formato de destino
-é o do Portal de Normas e Atos da UFF, cuja base existe em dumps de 2001 a 2014
-e serve de referência de modelagem — `boletins`, `ato_funcoes` e afins.
+`tools/doerj_extrair.py`. Lê o PDF e escreve um JSONL, uma linha por matéria.
+Não toca no banco: carregar é a Fase 5, e separar as duas deixa reprocessar sem
+mexer em dado publicado.
 
----
+### O presente que o Diário deu
+
+**Cada matéria publicada termina com `Id: 2765345`.** É o identificador da
+própria Imprensa Oficial. Foram 265 identificadores na edição de 22/09/2026,
+todos distintos. Isso troca "adivinhar onde um ato acaba" por "ler o marcador",
+e ainda dá de graça a chave natural que faz a reimportação ser idempotente.
+
+As fontes dizem o papel de cada bloco: `ArialMT` é matéria, `GalliardITCbyBT-Bold`
+em 10pt é nome de órgão, `UniversLTStd` é o expediente do IOERJ e `FilosofiaBold`
+é o cabeçalho decorativo, que sai como lixo de codificação.
+
+### Uma matéria não é um ato, e é isso que torna a Fase 4 difícil
+
+Matéria é unidade de publicação. Uma traz um decreto só; outra traz sete
+nomeações em sequência; outra não traz ato numerado nenhum.
+
+Medido em 850 matérias de três edições: **entre 13% e 23% trazem ato numerado.**
+O resto é movimentação de pessoal, despacho e retificação — que é o grosso do
+Diário.
+
+Por isso a ferramenta **não descarta o que não reconhece.** Toda matéria vira uma
+linha, com `reconhecido: false` quando não há ato numerado. Se pessoal entra no
+portal é a DP-05, e essa decisão não cabe a uma ferramenta de extração.
+
+### Três defeitos achados e corrigidos, todos silenciosos
+
+Nenhum dos três dava erro. Os três produziam dado errado com cara de certo, que
+é o jeito que extração de PDF costuma falhar.
+
+**O expediente do IOERJ vazava para dentro do primeiro decreto.** "ENVIO DE
+MATÉRIAS / Marcio Fontes de Mattos / Diretor-Presidente" ficava colado no meio
+do Decreto 50.485. Resolvido pelo filtro de fonte.
+
+**Norma citada virava ato publicado.** "na forma do Decreto nº 25.299, de
+19/05/99" gerava um registro de um decreto de 1999 como se tivesse sido
+publicado hoje. Cabeçalho de ato sai em caixa alta, citação sai em caixa mista:
+é esse o discriminador. Tirou 21 atos falsos de uma edição só.
+
+**A capa inteira entrava dentro do Decreto 50.483.** Brasão, lista de
+secretários e sumário. O sumário fica na terceira coluna, acima do texto do
+decreto, então lido por coluna ele cai no meio do ato.
+
+O terceiro rendeu uma lição que valeu a tarde. A primeira correção cortava tudo
+acima da última linha pontilhada, porque sumário tem linha pontilhada. Só que
+**resolução que altera outra norma cita artigo com reticências** —
+`"Art. 7º ............"`. A página 35 da edição de 18/09/2026 virou capa e cinco
+matérias reais evaporaram sem aviso nenhum. Só apareceu porque eu conferi a
+contagem antes e depois.
+
+O sinal certo é a linha pontilhada **junto do título do sumário**, que só existe
+na capa. Os dois casos estão travados em teste.
+
+### O que sai
+
+```
+python tools/doerj_extrair.py --autoteste
+python tools/doerj_extrair.py dados/2026/09/*.pdf
+```
+
+Por matéria: `id_ioerj`, data, caderno, página, órgão, tipo, número, data do ato,
+ementa e o texto inteiro. Mais `reconhecido` e `ementa_inferida`, porque ementa
+deduzida não é ementa publicada.
+
+Resultado nas três edições coletadas: **850 matérias, 166 atos numerados.**
+
+### O que ainda não faz, e é honesto dizer
+
+- Uma matéria com sete nomeações vira **uma** linha, não sete. O campo
+  `outros_atos` guarda os cabeçalhos extras, mas ninguém os separou ainda.
+- Não detecta relação entre atos. O `ato_relacoes` continua vazio, e a pergunta
+  "essa norma ainda vale?" continua sem resposta automática.
+- A ementa é deduzida do bloco em caixa alta. Funciona em cerca de 90% dos atos
+  numerados, e nos outros o campo fica nulo — que é resposta honesta.
+- Texto com espaçamento decorativo sai quebrado: "DEPARTAMENTO DE TRÂN S I TO".
+  É artefato do PDF, e não tem conserto barato.
 
 ## Dúvidas e decisões pendentes
 
@@ -177,7 +251,7 @@ e serve de referência de modelagem — `boletins`, `ato_funcoes` e afins.
 | ~~DP-02~~ | ~~Quem cria o repositório?~~ | criado em 2026-09-22 | resolvido |
 | DP-03 | Abrir o repositório ao público agora que a coleta funciona? | (a) abrir; (b) seguir privado | Médio |
 | ~~DP-04~~ | ~~Onde os PDFs ficam em definitivo~~ | (c) só texto, PDF por referência | resolvido em 2026-09-22 |
-| DP-05 | Que atos entram? Só normas, ou também atos de pessoal | (a) só normas; (b) tudo | Alto — muda a extração e o tamanho do banco |
+| DP-05 | Que atos entram? Só normas, ou também atos de pessoal | (a) só normas; (b) tudo. **Medido:** pessoal é 77% a 87% das matérias | Alto — decide o tamanho do portal |
 | DP-06 | Qual a licença do repositório | — | Baixo |
 | DP-07 | Como o portal deixa claro que o PDF não tem valor legal | (a) aviso fixo na página de cada ato; (b) só na página "sobre" | **Alto — é o risco jurídico do projeto** |
 | DP-08 | Até que ano recompor o acervo | testei 2010 e funcionou | Médio — agora é conta de texto, não de 20 GB de PDF |

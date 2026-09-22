@@ -3,6 +3,10 @@
 # definido na Fase 3.
 /dados/
 
+# O texto extraido tambem nao: ele se refaz do PDF em segundos, e o que vale
+# guardar e o que entra no banco.
+/extraido/
+
 # Ambiente
 .venv/
 __pycache__/

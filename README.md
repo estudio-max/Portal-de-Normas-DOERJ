@@ -26,8 +26,8 @@ não acha. O projeto existe para resolver esse pedaço.
 | 1 | Downloader do Diário | **concluída** |
 | 2 | Provar que a coleta roda no GitHub Actions | **concluída** |
 | 3 | Onde os PDFs ficam em definitivo | **concluída** |
-| 4 | Extração de texto e separação dos atos | **é a próxima** |
-| 5 | Banco e API | esquema pronto; API pendente |
+| 4 | Extração de texto e separação dos atos | **concluída** |
+| 5 | Banco e API | **é a próxima** |
 | 6 | Interface | pendente |
 
 O detalhe de cada fase está em [STEPS.md](STEPS.md).
@@ -68,6 +68,23 @@ aqui serve para consulta, busca e pesquisa, e não substitui a publicação
 oficial. O portal precisa dizer isso onde a pessoa lê, e não num rodapé.
 
 O caminho completo até o PDF, com o truque da chave, está no [CLAUDE.md](CLAUDE.md).
+
+## Como extrair
+
+```
+python tools/doerj_extrair.py dados/2026/09/*.pdf
+```
+
+Escreve um JSONL por edição, uma linha por matéria publicada, com órgão, tipo,
+número, data, ementa e o texto inteiro.
+
+A separação não é adivinhada: **cada matéria do Diário termina com um `Id:` da
+própria Imprensa Oficial**, e é ele que marca onde uma acaba e outra começa.
+
+Nem toda matéria é um ato numerado. Entre 13% e 23% são; o resto é movimentação
+de pessoal, despacho e retificação. A ferramenta guarda tudo e marca a
+diferença, porque decidir o que entra no portal não é trabalho de extrator.
+
 
 ## O banco
 
