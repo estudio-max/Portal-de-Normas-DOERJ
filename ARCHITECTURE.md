@@ -36,7 +36,10 @@ portal-normas-doerj/
 ├── public/                 o que vai para o servidor
 │   ├── .htaccess           HTTPS, cabeçalhos e recusa de indexação
 │   ├── robots.txt
-│   └── index.php           página de espera
+│   ├── index.php           página de espera
+│   └── assets/
+│       ├── css/base.css    identidade visual, decalcada do Mapa de CT&I
+│       └── fontes/         Nunito Sans, com a licença ao lado
 ├── src/                    vazio
 └── docs/
     ├── publicacao.md       como subir, e o que falta decidir
@@ -156,6 +159,9 @@ rápido exclui exatamente quem mais precisa dele.
 | AD-19 | PyMySQL no que escreve no banco | consulta parametrizada. Montar SQL com texto de PDF é onde mora esse tipo de bug |
 | AD-20 | Relação só entra quando o ato **declara** que a faz | voz passiva e oração adjetiva descrevem, não agem. Inventar revogação falsa custa mais que perder uma verdadeira |
 | AD-21 | Revogação de artigo é `parcial = 1` | revogar o art. 2º não revoga a norma. Só `parcial = 0` derruba o status do alvo |
+| AD-22 | Identidade visual decalcada do Mapa de CT&I | dois produtos da mesma secretaria. Quem usa um reconhece o outro sem ler o cabeçalho |
+| AD-23 | Sem modo escuro | o Mapa é claro. Inventar aqui um modo que lá não existe faria os dois parecerem coisas diferentes |
+| AD-24 | Fonte servida por este site, nunca por CDN | CDN entrega o endereço de rede de cada visitante a um terceiro, e num acervo que as pessoas consultam sobre si isso pesa mais |
 
 ## Decisões adiadas
 
