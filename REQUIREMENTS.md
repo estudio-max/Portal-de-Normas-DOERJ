@@ -1,122 +1,225 @@
 # REQUIREMENTS.md — Portal de Normas DOERJ
 
-**Versão:** 0.1, de 2026-09-22
-**Aviso de leitura:** nada aqui está implementado ainda. Este documento diz o
-que o produto precisa fazer, e a coluna de status diz onde cada coisa está.
+**Versão:** 0.2, de 2026-09-22
+**O que mudou da 0.1:** o produto deixou de ser um portal de normas genérico.
+Ganhou um recorte — ciência, pesquisa e inovação — e um público que inclui a
+gestão da SECTI-RJ, a alta gestão do Estado e os órgãos de controle.
 
 ---
 
 ## 1. O que é e para quem
 
-Um lugar onde se acha uma norma do Estado do Rio de Janeiro sem precisar saber
-em que dia ela saiu.
+Um lugar onde se enxerga o que o Estado do Rio de Janeiro decidiu, gastou e
+entregou em ciência, pesquisa e inovação, a partir do que ele próprio publicou
+no Diário Oficial.
 
-Hoje, quem procura um decreto ou uma resolução do Executivo estadual tem que
-conhecer a data de publicação, abrir o PDF do Diário daquele dia e ler até
-encontrar. Quem não sabe a data não acha. É um acervo público que na prática só
-serve a quem já sabe onde procurar.
+O Diário é público e quase inacessível: para ler um ato é preciso saber o dia da
+publicação, abrir o PDF e procurar. Quem não sabe a data não acha. E ninguém
+consegue olhar dois anos de uma pasta e dizer o que foi feito.
 
-O destino é o mesmo formato do Portal de Normas e Atos da UFF: cada ato como um
-registro próprio, com número, data, ementa, texto e o PDF de origem ao lado.
+### Três lentes sobre o mesmo acervo
+
+| # | Lente | Para quê |
+|---|---|---|
+| 1 | **CT&I em todas as pastas** | ciência e inovação não acontecem só na SECTI. Saúde, Educação, Ambiente e Fazenda decidem sobre CT&I o tempo todo, e hoje ninguém vê isso junto |
+| 2 | **Histórico da SECTI-RJ** | a gestão atual precisa saber o que foi feito antes dela, e a sociedade precisa poder conferir |
+| 3 | **Cada vinculada no seu espaço** | FAPERJ, UERJ, UENF, CECIERJ e FAETEC publicam sob o nome da secretaria. Hoje viram um balaio só |
+
+A lente 1 é a que dá insumo para decisão: mostra onde o Estado já investe em
+CT&I fora da SECTI, e portanto onde há parceria possível e onde há sobreposição.
 
 ### Quem usa
 
 | Perfil | O que quer |
 |---|---|
-| Servidor do Estado | a norma que rege o procedimento que ele executa hoje |
-| Advogado, contador, despachante | a redação vigente, e o histórico de alterações |
-| Jornalista e pesquisador | o que mudou em determinado assunto ao longo do tempo |
+| Gestão da SECTI | o que a pasta fez, quanto custou, e o que as outras pastas fazem em CT&I |
+| Governador e alta gestão | resultado da pasta em números, sem depender de relatório produzido pela própria pasta |
+| Órgãos de controle (TCE, CGE, MP) | rastrear um contrato ou um programa do início ao fim, pela fonte oficial |
+| Pesquisador e universidade | editais, bolsas, fomento, e o que mudou nas regras |
+| Servidor do Estado | a norma que rege o que ele executa hoje |
+| Jornalista e sociedade | o que foi decidido, quanto custou, e se foi entregue |
 | Cidadão | entender uma regra que o afeta, sem vocabulário jurídico |
-| Fornecedor do Estado | editais, prazos, e as normas de contratação |
+| Fornecedor do Estado | editais, prazos e normas de contratação |
 
-Vale o mesmo princípio do outro projeto: **escreva para o porteiro e para o
-doutor.** Quem chega sabendo o número do decreto tem que achar rápido. Quem
-chega sabendo só o assunto também.
+Vale o mesmo princípio do Mapa de CT&I: **escreva para o porteiro e para o
+doutor.** Quem chega sabendo o número do decreto acha rápido. Quem chega sabendo
+só o assunto também.
 
 ---
 
 ## 2. Requisitos funcionais
 
+### Coleta e base
+
 | # | Requisito | Status |
 |---|---|---|
 | RF-01 | Baixar o PDF do DOERJ Poder Executivo de uma data | **implementado** |
 | RF-02 | Baixar um intervalo de datas, para recompor o acervo | **implementado** |
-| RF-03 | Rodar sozinho todo dia útil, sem ninguém apertar botão | **implementado** |
+| RF-03 | Rodar sozinho todo dia útil | **implementado** |
 | RF-04 | Não gravar arquivo vazio nem dar sucesso falso | **implementado** |
-| RF-05 | ~~Guardar o PDF original~~ — substituído: guardar o endereço e a impressão digital | **revisto em 2026-09-22** |
+| RF-05 | ~~Guardar o PDF~~ — guardar o endereço e a impressão digital | revisto |
 | RF-06 | Extrair o texto do PDF | **implementado** |
-| RF-07 | Separar o Diário do dia em atos individuais | parcial — separa matérias; matéria com vários atos ainda é uma só |
-| RF-08 | Identificar tipo, número, data e órgão de cada ato | **implementado** para os atos numerados |
+| RF-07 | Separar o Diário em matérias | **implementado** |
+| RF-08 | Identificar tipo, número, data e órgão | **implementado** |
 | RF-09 | Extrair a ementa | parcial — deduzida, e marcada como tal |
-| RF-10 | Guardar tudo em banco com busca por texto | **implementado** |
-| RF-11 | Ligar um ato ao que ele altera ou revoga | parcial — detecta o declarado, e distingue revogação parcial de total |
-| RF-12 | Busca por número, por data, por órgão, por assunto | pendente |
-| RF-13 | Página de cada ato, com link para o PDF de origem | pendente |
+| RF-10 | Banco com busca por texto | **implementado** |
+| RF-11 | Ligar um ato ao que ele altera ou revoga | parcial — o declarado, com parcial x total |
+| RF-12 | Busca por número, data, órgão e assunto | pendente |
 | RF-14 | Dizer de onde veio e quando foi coletado | pendente |
-| RF-16 | Dizer, onde a pessoa lê, que o PDF não tem valor legal | pendente |
-| RF-15 | Endereço fixo por ato, que não quebra com o tempo | pendente |
+| RF-16 | Dizer que o PDF não tem valor legal | pendente |
+| RF-17 | Identificar a vinculada que publicou | **implementado** |
 
-### RF-01 tem um detalhe que decide tudo
+**RF-17 existe porque o Diário esconde a autoria.** FAPERJ, UERJ, UENF, CECIERJ
+e FAETEC publicam sob "Secretaria de Estado de Ciência, Tecnologia e Inovação".
+Sem separar, não há como dar a cada uma o seu espaço.
 
-A verificação não pode ser o código HTTP. O `mostra_edicao.php` responde 200
-para chave inválida, com corpo vazio. Um downloader que confie no status grava
-o vazio e escreve "ok" no log. O critério é o corpo: tamanho plausível, tipo do
-conteúdo, e a assinatura `%PDF` nos primeiros bytes.
+### As três lentes
 
-### RF-11 é o que separa portal de repositório
+| # | Requisito | Status |
+|---|---|---|
+| RF-18 | Classificar cada matéria por tema de CT&I | pendente |
+| RF-19 | Lente 1: CT&I de todas as pastas, num lugar só | pendente |
+| RF-20 | Lente 2: linha do tempo da SECTI e do seu sistema | pendente |
+| RF-21 | Lente 3: espaço próprio e pesquisável por vinculada | pendente |
+| RF-22 | Busca que funciona em qualquer das três lentes | pendente |
 
-Uma norma sozinha não responde a pergunta que as pessoas fazem. A pergunta é
-"isso ainda vale?". Sem a cadeia de alterações e revogações, o portal devolve um
-texto que pode estar morto há seis anos, e quem lê não tem como saber.
+**RF-18 tem uma armadilha medida, não suposta.** 17% das matérias mencionam
+termo de CT&I, mas **"pesquisa de preços" é licitação, não ciência**. A
+classificação precisa de exclusões explícitas, e o que for classificado por
+regra automática tem que dizer que foi.
 
-Vai ser a parte mais difícil, porque a relação está escrita em prosa dentro do
-ato, não num campo. Fica para depois das fases que a sustentam, e entra com
-indicação clara de confiança: "detectado automaticamente" não é a mesma coisa
-que "conferido por pessoa".
+### Números, custo e execução
+
+| # | Requisito | Status |
+|---|---|---|
+| RF-23 | Extrair valor em R$ de cada matéria que traga um | pendente |
+| RF-24 | Extrair processo SEI, contrato e vigência | pendente |
+| RF-25 | Ler os anexos de crédito suplementar: programa de trabalho, natureza de despesa, fonte e valor | pendente |
+| RF-26 | Ligar atos do mesmo processo SEI numa linha do tempo | pendente |
+| RF-27 | Mostrar, por pasta e por período, como o dinheiro se reparte entre folha, custeio, investimento e repasse a terceiro setor | pendente |
+| RF-28 | Comparar o que foi orçado com o que foi entregue | pendente |
+
+**O que foi medido, e sustenta esses requisitos:**
+
+| Sinal | Presença em 850 matérias |
+|---|---|
+| Valor em R$ | 26% — 803 valores, somando R$ 3,2 bilhões em três dias |
+| Processo SEI | **91%** |
+| Número de contrato | 10% |
+| Prazo ou vigência | 13% |
+| Natureza de despesa | só nos decretos de crédito suplementar, e ali em peso |
+
+O processo SEI em 91% das matérias é o achado que viabiliza o RF-26: é a chave
+que liga o edital, o contrato, o aditivo e o pagamento do mesmo objeto.
+
+**RF-27 responde a uma pergunta que hoje se responde de ouvido.** A suspeita é
+que a maior parte do orçamento vai para folha e material, e quase nada para
+projeto e ação voltada à sociedade. Os códigos de natureza de despesa permitem
+medir isso em vez de supor:
+
+| Código | O que é |
+|---|---|
+| `3190` | pessoal e encargos — a folha |
+| `3390` | outras despesas correntes — material e serviço |
+| `4490` | investimento |
+| `3350` e `4450` | repasse a instituição sem fins lucrativos, onde mora boa parte do projeto com a sociedade |
+
+Os códigos aparecem nos anexos dos decretos de crédito suplementar, junto do
+programa de trabalho e da fonte. **Casar cada código com o seu valor exige ler a
+tabela pela geometria da página**, e não por expressão regular: no texto
+achatado, o código e o R$ ficam em pedaços distantes um do outro.
+
+### Apresentação
+
+| # | Requisito | Status |
+|---|---|---|
+| RF-13 | Página de cada ato, com link para o PDF de origem | pendente |
+| RF-15 | Endereço fixo por ato, que não quebra com o tempo | **implementado** |
+| RF-29 | Os números aparecem como parte natural da consulta, e não como painel à parte com nome de inteligência | pendente |
+
+**Sobre o RF-29.** A capacidade analítica é a parte mais valiosa da ferramenta,
+e é justamente por isso que ela não se anuncia. Um portal de transparência que
+se apresenta como instrumento de inteligência convida a ser lido como
+instrumento político — e aí perde as duas coisas: a confiança de quem consulta e
+a serventia para quem decide.
+
+O caminho é o oposto. Cada ato mostra o seu valor, o seu processo e o seu
+histórico como informação comum. As somas aparecem onde fazem sentido: por
+pasta, por período, por programa. Quem precisa do panorama chega nele navegando,
+e não clicando num botão chamado "análise".
+
+Isso não esconde nada. Tudo que a ferramenta mostra é publicação oficial, e a
+origem de cada número fica a um clique.
 
 ---
 
 ## 3. Requisitos não funcionais
 
-| # | Requisito | Por quê |
-|---|---|---|
-| RNF-01 | Educado com o servidor de origem: uma requisição por vez, intervalo entre elas, e para na primeira recusa | é um site de governo, e derrubá-lo encerra o projeto |
-| RNF-02 | Idempotente: rodar duas vezes a mesma data não duplica nada | **implementado.** cron repete, e vai repetir |
-| RNF-03 | Log que diz o que aconteceu de verdade | ver RF-04 |
-| RNF-04 | Nenhuma credencial no repositório | regra do projeto |
-| RNF-05 | Acessível, WCAG 2.1 AA | é serviço público |
-| RNF-06 | Abre em conexão ruim e em telefone modesto | idem |
-| RNF-07 | Roda na hospedagem que já existe, sem servidor novo | custo |
-| RNF-08 | Falha de coleta avisa alguém, não fica quieta | **parcial.** O Actions manda e-mail quando a execução falha, e a janela de três dias recupera perda pontual. O que ainda não existe é alarme para coleta que para de rodar por completo |
+| # | Requisito | Por quê | Status |
+|---|---|---|---|
+| RNF-01 | Educado com o servidor de origem | é site de governo, e derrubá-lo encerra o projeto | **implementado** |
+| RNF-02 | Idempotente | cron repete, e vai repetir | **implementado** |
+| RNF-03 | Log que diz o que aconteceu de verdade | ver RF-04 | **implementado** |
+| RNF-04 | Nenhuma credencial no repositório | regra do projeto | **implementado** |
+| RNF-05 | Acessível, WCAG 2.1 AA | é serviço público | pendente |
+| RNF-06 | Abre em conexão ruim e em telefone modesto | idem | pendente |
+| RNF-07 | Roda na hospedagem que já existe | custo | pendente |
+| RNF-08 | Falha de coleta avisa alguém | um mês sem coletar só se descobre tarde | parcial |
+| RNF-09 | Todo número mostra de qual ato saiu | ver abaixo | pendente |
+| RNF-10 | O que foi deduzido por regra automática aparece marcado | proveniência não é enfeite | parcial |
+
+**RNF-09 é o que separa esta ferramenta de uma planilha.** Se a tela diz que a
+SECTI aplicou determinado valor num programa, tem que haver o caminho até o
+decreto que publicou aquele número. Sem isso, quem for questionado por um órgão
+de controle não tem como responder, e a ferramenta vira passivo em vez de ativo.
 
 ---
 
 ## 4. Critérios de aceitação por fase
 
-| Fase | Passa quando |
-|---|---|
-| 1 | passou em 2026-09-22: edições 171 a 173, e fim de semana como "sem edição" |
-| 2 | passou em 2026-09-22: 33 segundos, arquivos idênticos aos locais |
-| 3 | decidido em 2026-09-22: não se guarda PDF. Esquema pronto e provado |
-| 4 | passou em 2026-09-22: 850 matérias de 3 edições, 166 atos, conferidos contra o PDF |
-| 5 | banco: passou em 2026-09-22, 850 atos e 20 relações. API: pendente |
-| 6 | Uma pessoa que nunca viu o portal acha uma norma pelo assunto |
+| Fase | Passa quando | Estado |
+|---|---|---|
+| 1 | Baixa o PDF de uma data e recusa data inválida | passou em 2026-09-22 |
+| 2 | O mesmo, rodando no GitHub Actions | passou em 2026-09-22 |
+| 3 | Decidido onde o acervo mora | só texto, PDF por referência |
+| 4 | De um Diário de verdade saem as matérias | 850 matérias, 3 edições |
+| 5 | Banco carregado, busca devolve o ato certo | banco pronto; API pendente |
+| 6 | Classificação temática conferida à mão contra o PDF | pendente |
+| 7 | As três lentes respondem | pendente |
+| 8 | Valores casados com natureza de despesa, cada número mostrando sua origem | pendente |
+| 9 | Uma pessoa que nunca viu o portal acha uma norma pelo assunto | pendente |
 
 ---
 
-## 5. Fora de escopo, por enquanto
+## 5. Fora de escopo
 
 - Poder Legislativo e Judiciário. Só o Executivo.
 - Municípios.
-- Consolidação de texto, ou seja, mostrar a norma já com as alterações aplicadas. É trabalho jurídico, não de software.
+- Consolidação de texto — mostrar a norma já com as alterações aplicadas. É
+  trabalho jurídico, não de software.
 - Qualquer coisa que pareça aconselhamento jurídico.
+- **Execução orçamentária completa.** Ver o limite abaixo.
+
+### O limite honesto da parte orçamentária
+
+O Diário publica **movimentação**, e não o orçamento inteiro. Crédito
+suplementar, contrato, empenho e repasse aparecem; a Lei Orçamentária Anual e a
+execução consolidada vivem no SIAFE-Rio e no portal da Transparência.
+
+Então a ferramenta responde bem **"para onde o dinheiro se moveu, e em favor de
+quê"**, e não responde **"quanto a pasta gastou no ano"**.
+
+Isso precisa estar escrito na tela, e não só aqui. Um número que parece ser o
+total e não é, lido por um órgão de controle, custa mais caro que número nenhum.
+
+Se a pergunta do total for necessária, o caminho é cruzar com a Transparência:
+outra fonte, outra fase, outra decisão.
 
 ### Uma coisa que NÃO está fora de escopo
 
 Dizer que o PDF coletado **não tem valor legal**. O próprio IOERJ nomeia o
 arquivo `Nao_Possui_Valor_Legal_*.pdf`. Um portal que apresente esse texto como
-se fosse a publicação oficial engana quem o usa para decidir alguma coisa. É o
-RF-16, e ele não é enfeite.
+se fosse a publicação oficial engana quem o usa para decidir. É o RF-16.
 
 ---
 

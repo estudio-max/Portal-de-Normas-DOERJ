@@ -80,6 +80,11 @@ except ImportError:  # pragma: no cover
 # Onde uma coluna acaba e a outra começa, numa página de 822 pontos de largura.
 BORDAS = (270, 510)
 
+# Largura mínima de um espaço, em fração da altura da fonte, para ele contar
+# como separador de palavra. Abaixo disso é espaçamento decorativo. Ver
+# `texto_da_linha` para o porquê de 0,10.
+ESPACO_MINIMO = 0.10
+
 # Blocos cuja fonte predominante é uma destas não são matéria: são o expediente
 # do IOERJ e o cabeçalho decorativo da capa.
 FONTES_FORA = ("UniversLTStd", "FilosofiaBold")
@@ -130,6 +135,40 @@ FIM_DA_EMENTA = re.compile(
 )
 
 NOME_DO_ARQUIVO = re.compile(r"^(\d{4}-\d{2}-\d{2})-(.+?)(?:-(\d+))?$")
+
+# A entidade que de fato publicou, dentro do sistema da secretaria: FAPERJ,
+# UERJ, UENF, CECIERJ, FAETEC e as demais. O Diário a escreve nas primeiras
+# linhas da matéria, depois do nome da secretaria.
+#
+# Isto só passou a funcionar depois do conserto do espaçamento: antes, metade
+# desses nomes chegava como "F U N DA Ç Ã O".
+UNIDADE = re.compile(
+    r"^(FUNDA[ÇC][ÃA]O|UNIVERSIDADE|INSTITUTO|CENTRO|AG[ÊE]NCIA|COMPANHIA|"
+    r"AUTARQUIA|DEPARTAMENTO|SUPERINTEND[ÊE]NCIA|EMPRESA|CORPO DE BOMBEIROS|"
+    r"POL[ÍI]CIA|PROCURADORIA|CONTROLADORIA|DEFENSORIA|JUNTA|CONSELHO)\b",
+    re.I,
+)
+
+# "ADMINISTRAÇÃO VINCULADA" é divisória e o nome da secretaria se repete: nem um
+# nem outro é a unidade.
+NAO_E_UNIDADE = re.compile(r"^(ADMINISTRA[ÇC][ÃA]O VINCULADA|SECRETARIA)\b", re.I)
+
+# Continuação do nome: em caixa alta, sem número, sem pontuação de fim.
+CONTINUA_O_NOME = re.compile(r"^[A-ZÀ-Ü][A-ZÀ-Ü\s\-/ÀÁÂÃÉÊÍÓÔÕÚÇ]{2,}$")
+
+# Onde o nome acaba e a matéria começa.
+FIM_DO_NOME = re.compile(
+    r"^(ATOS?\b|DESPACHOS?\b|APOSTILAS?\b|PORTARIA|RESOLU|DELIBERA|EDITAL|AVISO|"
+    r"EXTRATO|TERMO|CONTRATO|RETIFICA|ERRATA|DECRETO|PROCESSO|COMUNICADO|CONVOCA|"
+    r"GABINETE|PRESID[ÊE]NCIA|DIRETORIA|PR[ÓO][ -]?REITORIA|REITORIA|"
+    # As subunidades são informação de verdade, mas não fazem parte do nome da
+    # vinculada: "UERJ / Centro de Educação e Humanidades / Instituto de
+    # Psicologia" são três níveis, e juntar os três cria uma entidade que não
+    # existe na contagem.
+    r"CENTRO D[EO]|INSTITUTO D[EO]|FACULDADE|ESCOLA D[EO]|DEPARTAMENTO D[EO]|"
+    r"SUPERINTEND[ÊE]NCIA D[AEO]|COORDENA)",
+    re.I,
+)
 
 
 MINUSCULAS = {"de", "da", "do", "das", "dos", "e", "em", "a", "o"}
@@ -197,27 +236,63 @@ def coluna(bbox) -> int:
     return 1 if meio < BORDAS[1] else 2
 
 
+def texto_da_linha(chars: list[tuple[dict, float]]) -> str:
+    """Remonta a linha jogando fora o espaço que não separa palavra.
+
+    O Diário compõe títulos com espaçamento entre letras, e o PDF guarda isso
+    como espaço de verdade. O resultado, lido direto, é
+    `S E C R E TA R I A DE E S TA D O`: 36% das matérias vêm assim, e nelas o
+    nome do órgão e da vinculada fica ilegível — justo o que mais importa
+    indexar.
+
+    Não dá para consertar contando letras, porque em
+    `S E C R E TA R I A DE E S TA D O` o "DE" é palavra e o "TA" não é. O que
+    separa os dois é a largura do espaço, e ela está no PDF.
+
+    Medido em 29.664 espaços de duas edições, a distribuição é limpa e tem duas
+    corcovas: espaçamento decorativo mede **0,00** da altura da fonte; espaço
+    entre palavras começa em 0,15 e se concentra em 0,45. Entre 0,00 e 0,15 há
+    um vale quase vazio, e o corte mora nele.
+    """
+    saida = []
+    for i, (c, tamanho) in enumerate(chars):
+        if c["c"] == " " and 0 < i < len(chars) - 1:
+            largura = chars[i + 1][0]["bbox"][0] - chars[i - 1][0]["bbox"][2]
+            if largura / max(tamanho, 1) < ESPACO_MINIMO:
+                continue
+        saida.append(c["c"])
+    return "".join(saida)
+
+
 def blocos_da_pagina(pagina) -> list[tuple[int, float, str, bool]]:
     """Os blocos de matéria, na ordem em que uma pessoa leria."""
     achados = []
-    for bl in pagina.get_text("dict")["blocks"]:
+    # `rawdict` uma vez por página, e não `dict` mais um recorte por bloco: é o
+    # nível do caractere que permite separar espaço de palavra de espaçamento
+    # decorativo, e reparsear a página por bloco custava caro à toa.
+    for bl in pagina.get_text("rawdict")["blocks"]:
         if "lines" not in bl:
             continue
 
-        marcas = [
-            (sp["font"], round(sp["size"], 1))
-            for ln in bl["lines"]
-            for sp in ln["spans"]
-            if sp["text"].strip()
-        ]
+        marcas = []
+        linhas = []
+        for ln in bl["lines"]:
+            chars = []
+            for sp in ln["spans"]:
+                for c in sp["chars"]:
+                    chars.append((c, sp["size"]))
+                if sp["text"].strip() if "text" in sp else any(
+                    c["c"].strip() for c in sp["chars"]
+                ):
+                    marcas.append((sp["font"], round(sp["size"], 1)))
+            linhas.append(texto_da_linha(chars))
+
         if not marcas:
             continue
         if sum(1 for f, _ in marcas if f.startswith(FONTES_FORA)) > len(marcas) / 2:
             continue
 
-        # O texto vem por recorte da área, e não da soma dos spans: somados, os
-        # spans perdem os espaços e sai "SecretariadeEstado".
-        texto = pagina.get_text("text", clip=fitz.Rect(bl["bbox"])).strip()
+        texto = "\n".join(linhas).strip()
         if not texto:
             continue
 
@@ -352,6 +427,37 @@ def achar_ementa(texto: str, cabecalho: str) -> str | None:
     return ementa if len(ementa) > 12 else None
 
 
+def achar_unidade(texto: str) -> str | None:
+    """A entidade que publicou, dentro do sistema da secretaria.
+
+    FAPERJ, UERJ, UENF, CECIERJ, FAETEC e as demais publicam sob o nome da
+    secretaria a que estão vinculadas. Sem este campo, todo o sistema de CT&I
+    vira um balaio só chamado "Secretaria de Ciência, Tecnologia e Inovação", e
+    não há como dar a cada vinculada o seu próprio espaço.
+    """
+    linhas = [l.strip() for l in texto.split("\n") if l.strip()][:8]
+    for i, linha in enumerate(linhas):
+        if NAO_E_UNIDADE.match(linha):
+            continue
+        if not (UNIDADE.match(linha) and len(linha) > 8):
+            continue
+
+        # O nome quebra em duas linhas na coluna estreita: "FUNDAÇÃO CARLOS
+        # CHAGAS FILHO DE AMPARO" / "À PESQUISA DO ESTADO DO RIO DE JANEIRO".
+        # Sem juntar, a mesma FAPERJ vira três vinculadas diferentes na
+        # contagem.
+        nome = [linha]
+        for seguinte in linhas[i + 1:]:
+            if (CONTINUA_O_NOME.match(seguinte)
+                    and not FIM_DO_NOME.match(seguinte)
+                    and len(" ".join(nome)) < 150):
+                nome.append(seguinte)
+            else:
+                break
+        return re.sub(r"\s+", " ", " ".join(nome))[:200]
+    return None
+
+
 def dados_do_nome(caminho: Path) -> tuple[str | None, str | None, int]:
     m = NOME_DO_ARQUIVO.match(caminho.stem)
     if not m:
@@ -406,6 +512,7 @@ def extrair(caminho: Path) -> list[dict]:
             "sequencia": sequencia,
             "pagina": m["pagina"],
             "orgao": m["orgao"],
+            "unidade": achar_unidade(texto),
             "reconhecido": bool(atos),
             "tipo": primeiro.get("tipo"),
             "sigla": primeiro.get("sigla"),
@@ -452,6 +559,19 @@ def autoteste() -> int:
 
     assert juntar_hifen("PROVI-\nDÊNCIAS") == "PROVIDÊNCIAS"
     assert juntar_hifen("fim.\nOutra") == "fim.\nOutra"
+
+    # A vinculada que publicou, e não a secretaria a que ela pertence.
+    assert achar_unidade(
+        "SECRETARIA DE ESTADO DE CIÊNCIA, TECNOLOGIA E INOVAÇÃO\n"
+        "FUNDAÇÃO CARLOS CHAGAS FILHO DE AMPARO À PESQUISA\nDESPACHOS"
+    ) == "FUNDAÇÃO CARLOS CHAGAS FILHO DE AMPARO À PESQUISA"
+    assert achar_unidade(
+        "ADMINISTRAÇÃO VINCULADA\nSECRETARIA DE ESTADO DE CIÊNCIA\n"
+        "UNIVERSIDADE ESTADUAL DO NORTE FLUMINENSE\nATO"
+    ) == "UNIVERSIDADE ESTADUAL DO NORTE FLUMINENSE"
+    # Matéria da própria secretaria não tem vinculada.
+    assert achar_unidade("SECRETARIA DE ESTADO DA CASA CIVIL\nATO DO SECRETÁRIO") is None
+    assert achar_unidade("DECRETO Nº 50.485 DE 21 DE SETEMBRO DE 2026") is None
 
     assert como_nome("ORDEM DE SERVIÇO") == "Ordem de Serviço"
     assert como_nome("RESOLUÇÃO CONJUNTA") == "Resolução Conjunta"

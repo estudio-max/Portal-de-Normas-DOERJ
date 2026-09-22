@@ -16,8 +16,10 @@ etapa funcional concluída.
 | 3 | Onde os PDFs ficam em definitivo | **concluída** |
 | 4 | Extração de texto e identificação dos atos | **concluída** |
 | 5 | Banco e API (`backend/db`, `backend/api`) | banco **concluído**; API pendente |
-| 6 | Interface, no formato do portal da UFF (`src`) | pendente |
-| 7 | Agendar extração e carga junto da coleta | pendente |
+| 6 | Classificação temática de CT&I | **é a próxima** |
+| 7 | As três lentes, e a interface | pendente |
+| 8 | Valores casados com natureza de despesa | pendente |
+| 9 | Agendar extração e carga junto da coleta | pendente |
 
 ---
 
@@ -314,6 +316,58 @@ A consulta que prova isso está no `provar_esquema.py`, item 8.
 
 A API. O banco responde às consultas do portal, mas nada serve isso ainda.
 
+## Fases 6 a 9 — o recorte de CT&I
+
+O produto mudou de escopo em 2026-09-22, e o `REQUIREMENTS.md` 0.2 tem o
+detalhe. Em resumo: deixou de ser portal de normas genérico e passou a ter três
+lentes — CT&I em todas as pastas, histórico da SECTI, e espaço próprio por
+vinculada — mais uma camada de números.
+
+### O que já foi medido, e não é suposição
+
+| O quê | Medido em 850 matérias |
+|---|---|
+| Mencionam termo de CT&I | 17% |
+| Trazem valor em R$ | 26%, somando R$ 3,2 bi em três dias |
+| Trazem processo SEI | **91%** |
+| Trazem contrato | 10% |
+| Trazem prazo ou vigência | 13% |
+| Vinculada identificada | 45% |
+
+O SEI em 91% é o achado mais útil: é a chave que liga edital, contrato, aditivo
+e pagamento do mesmo objeto numa linha do tempo.
+
+### Duas armadilhas já conhecidas
+
+**"Pesquisa de preços" não é pesquisa científica.** É licitação. Aparece em 2 das
+850, e classificar por palavra solta erraria.
+
+**Crédito suplementar não é o orçamento.** O Diário publica movimentação. Quem
+somar crédito suplementar e chamar de gasto da pasta vai errar, e errar na frente
+de órgão de controle. Ver o limite no `REQUIREMENTS.md` §5.
+
+### Fase 6 — classificar por tema
+
+Regra explícita com lista de inclusão e de exclusão, e marca de "classificado
+automaticamente" em tudo que sair dela. Conferência à mão contra o PDF antes de
+qualquer tela usar isso.
+
+### Fase 7 — as três lentes e a interface
+
+A lente 2, do histórico da SECTI, depende de coletar anos anteriores. A coleta
+já sabe fazer isso — testei até 2010 — mas é volume: cerca de 250 edições por
+ano.
+
+### Fase 8 — valor casado com natureza de despesa
+
+É o que responde "quanto vai para folha e quanto vai para projeto". Os códigos
+estão nos anexos dos decretos de crédito suplementar: `3190` pessoal, `3390`
+custeio, `4490` investimento, `3350` e `4450` repasse a terceiro setor.
+
+**Exige ler a tabela pela geometria da página.** No texto achatado, o código e o
+valor ficam em pedaços distantes, e casar os dois por expressão regular produz
+número errado com aparência de certo — que aqui é o pior resultado possível.
+
 ## Dúvidas e decisões pendentes
 
 | # | Pergunta | Alternativas | Impacto |
@@ -322,9 +376,12 @@ A API. O banco responde às consultas do portal, mas nada serve isso ainda.
 | ~~DP-02~~ | ~~Quem cria o repositório?~~ | criado em 2026-09-22 | resolvido |
 | DP-03 | Abrir o repositório ao público agora que a coleta funciona? | (a) abrir; (b) seguir privado | Médio |
 | ~~DP-04~~ | ~~Onde os PDFs ficam em definitivo~~ | (c) só texto, PDF por referência | resolvido em 2026-09-22 |
-| DP-05 | Que atos entram? Só normas, ou também atos de pessoal | (a) só normas; (b) tudo. **Medido:** pessoal é 77% a 87% das matérias | Alto — decide o tamanho do portal |
+| ~~DP-05~~ | ~~Que atos entram?~~ | **tudo, inclusive movimentação de pessoal** | resolvido em 2026-09-22 |
+| DP-11 | Quais foram os nomes da pasta de CT&I ao longo do tempo | não sei, e não vou supor. Método: coletar uma edição por semestre desde 2010 e ler os cabeçalhos de órgão | **Alto — sem isso a lente 2 perde o histórico anterior ao nome atual** |
+| DP-12 | Até que ano recompor o acervo, para a lente 2 | 250 edições por ano; 2010 foi testado e funciona. Agora é conta de texto, não de 20 GB de PDF | Alto — decide o esforço de coleta |
+| DP-13 | O que conta como tema de CT&I | lista de inclusão e exclusão, conferida à mão | Alto — define a lente 1 |
+| DP-14 | A classificação temática precisa de revisão humana antes de publicar? | (a) sim, fila de curadoria; (b) não, com marca de automático | Médio |
 | DP-06 | Qual a licença do repositório | — | Baixo |
 | DP-07 | Como o portal deixa claro que o PDF não tem valor legal | (a) aviso fixo na página de cada ato; (b) só na página "sobre" | **Alto — é o risco jurídico do projeto** |
-| DP-08 | Até que ano recompor o acervo | testei 2010 e funcionou | Médio — agora é conta de texto, não de 20 GB de PDF |
 | DP-10 | Onde o banco de produção vai morar, e quem faz backup | (a) MySQL da hospedagem; (b) outro | **Alto — hoje só existe banco de teste** |
 | DP-09 | O que fazer se o IOERJ quebrar os links | (a) aceitar e viver de texto; (b) guardar PDF só das normas, não do Diário inteiro | Médio — é a única defesa que devolveria o arquivo |

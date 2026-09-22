@@ -176,6 +176,7 @@ def carregar(caminho: Path, pasta_pdf: Path | None) -> tuple[int, int, int]:
                     edicao_id, r["id_ioerj"], r.get("tipo"), r.get("numero"),
                     ano_de(r), r.get("data_ato"), r["data_pub"],
                     r.get("orgao"), apelido(r.get("orgao")),
+                    r.get("unidade"), apelido(r.get("unidade")),
                     r.get("ementa"), 1 if r.get("ementa_inferida") else 0,
                     r.get("cabecalho"), 1 if r.get("reconhecido") else 0,
                     r.get("atos_no_texto") or 0,
@@ -186,6 +187,7 @@ def carregar(caminho: Path, pasta_pdf: Path | None) -> tuple[int, int, int]:
                     c.execute(
                         "UPDATE atos SET edicao_id=%s, id_ioerj=%s, tipo=%s, numero=%s,"
                         " ano=%s, data_ato=%s, data_pub=%s, orgao=%s, orgao_slug=%s,"
+                        " unidade=%s, unidade_slug=%s,"
                         " ementa=%s, ementa_inferida=%s, cabecalho=%s, reconhecido=%s,"
                         " atos_no_texto=%s, pagina=%s WHERE id=%s",
                         campos + (ident,),
@@ -194,10 +196,11 @@ def carregar(caminho: Path, pasta_pdf: Path | None) -> tuple[int, int, int]:
                 else:
                     c.execute(
                         "INSERT INTO atos (edicao_id, id_ioerj, tipo, numero, ano,"
-                        " data_ato, data_pub, orgao, orgao_slug, ementa,"
+                        " data_ato, data_pub, orgao, orgao_slug, unidade,"
+                        " unidade_slug, ementa,"
                         " ementa_inferida, cabecalho, reconhecido, atos_no_texto,"
                         " pagina, id)"
-                        " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                        " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                         campos + (ident,),
                     )
                     novos += 1
