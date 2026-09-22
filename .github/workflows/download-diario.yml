@@ -1,16 +1,9 @@
 # Coleta do Diário Oficial do Estado do Rio de Janeiro, Poder Executivo.
 #
-# ESTE FLUXO AINDA NÃO TEM O QUE EXECUTAR. O downloader (tools/doerj_download.py)
-# não existe no repositório, e por isso o primeiro passo confere a presença dele
-# e para com uma mensagem explicando, em vez de falhar com um traceback de
-# Python que não diz nada a quem abrir o log daqui a três meses.
-#
-# Por isso ele está DESATIVADO no GitHub (Actions > Baixar o Diário > Enable
-# workflow religa). Deixá-lo ligado faria o agendamento falhar toda manhã de dia
-# útil, e uma caixa de entrada que recebe falha todo dia é uma caixa que para de
-# ler falha.
-#
-# Ver a Fase 1 do STEPS.md.
+# O downloader é tools/doerj_download.py, sem dependência fora da biblioteca
+# padrão. O primeiro passo confere que ele está lá: um fluxo agendado que chama
+# arquivo inexistente falha com traceback de Python, e traceback não diz nada a
+# quem abre o log daqui a três meses.
 
 name: Baixar o Diário
 
@@ -50,9 +43,8 @@ jobs:
           if [ ! -f tools/doerj_download.py ]; then
             echo "::error::tools/doerj_download.py não existe neste repositório."
             echo ""
-            echo "Este fluxo está agendado, mas não há o que executar."
-            echo "A Fase 1 do STEPS.md está bloqueada: ou o downloader que já"
-            echo "funciona é trazido para cá, ou ele precisa ser reconstruído."
+            echo "O fluxo está agendado, mas não há o que executar."
+            echo "Ver a Fase 1 do STEPS.md."
             exit 1
           fi
 
@@ -60,11 +52,6 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-
-      - name: Instalar dependências
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Baixar
         run: |
@@ -82,9 +69,9 @@ jobs:
           python tools/doerj_download.py --inicio "$INICIO" --fim "$FIM" --destino dados/
 
       - name: Conferir que veio PDF de verdade
-        # O endpoint do IOERJ responde 200 com corpo vazio quando a chave é
-        # inválida. Sem esta conferência, um mês de arquivos vazios passa por
-        # um mês de execuções verdes. Ver RF-04.
+        # O downloader já confere isto antes de gravar. A conferência repetida
+        # aqui é de propósito: ela pega o caso em que o downloader mudar e a
+        # verificação dele se perder no caminho. Ver RF-04.
         run: |
           set -e
           quantos=$(find dados -name "*.pdf" -size +10k 2>/dev/null | wc -l)

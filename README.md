@@ -8,11 +8,10 @@ Hoje o acervo é público e quase inacessível. Para ler um decreto é preciso s
 o dia da publicação, abrir o PDF daquele dia e procurar. Quem não sabe a data
 não acha. O projeto existe para resolver esse pedaço.
 
-> **Repositório privado** até a coleta provar que funciona. Código de raspagem
-> público antes de funcionar convida cópia de algo quebrado.
+> **Repositório privado** por enquanto. Abrir ou não é decisão pendente.
 >
-> **Estado: começando.** A documentação e o esqueleto estão de pé. Nada foi
-> coletado ainda, e a primeira fase está bloqueada. O porquê está logo abaixo.
+> **A coleta funciona.** Falta o resto: extrair o texto, separar os atos, banco,
+> busca e interface.
 
 ---
 
@@ -21,8 +20,8 @@ não acha. O projeto existe para resolver esse pedaço.
 | Fase | O que entrega | Status |
 |---|---|---|
 | 0 | Esqueleto, documentação e agendamento | concluída |
-| 1 | Downloader do Diário | **bloqueada** |
-| 2 | Provar que a coleta roda no GitHub Actions | pendente |
+| 1 | Downloader do Diário | **concluída** |
+| 2 | Provar que a coleta roda no GitHub Actions | em teste |
 | 3 | Onde os PDFs ficam em definitivo | pendente |
 | 4 | Extração de texto e separação dos atos | pendente |
 | 5 | Banco e API | pendente |
@@ -30,32 +29,42 @@ não acha. O projeto existe para resolver esse pedaço.
 
 O detalhe de cada fase está em [STEPS.md](STEPS.md).
 
-### Por que a Fase 1 está bloqueada
+## Como baixar
 
-Falta o downloader. Ele foi descrito como pronto e funcionando, mas o arquivo
-não chegou a esta máquina.
+Só precisa de Python 3. Nenhuma dependência fora da biblioteca padrão.
 
-Metade do caminho está mapeada: o endpoint que serve o PDF foi encontrado e
-testado, e junto com ele veio uma armadilha que mudou o desenho da verificação.
-O que falta é a etapa que traduz uma data no identificador que o endpoint
-espera. Sem ela, não há o que pedir ao servidor.
+```
+python tools/doerj_download.py --inicio 2026-09-22
+python tools/doerj_download.py --inicio 2026-09-01 --fim 2026-09-22
+python tools/doerj_download.py --inicio 2026-09-22 --todos
+python tools/doerj_download.py --autoteste
+```
 
-Nenhum arquivo foi escrito no lugar do que falta. Um `doerj_download.py` que não
-baixa nada seria pior que a ausência dele, porque o agendamento passaria a
-apontar para algo que parece existir.
+O padrão é só a Parte I, do Poder Executivo. `--todos` traz os outros cadernos.
+Os arquivos ficam em `dados/AAAA/MM/`, fora do git.
 
-### A armadilha, porque ela vale para quem for escrever o downloader
+Rodar duas vezes a mesma data não baixa de novo, e dia sem edição sai como
+"sem edição" em vez de erro.
 
-O `mostra_edicao.php` do IOERJ responde `Erro.` quando não recebe chave nenhuma.
-Mas quando recebe uma chave **inválida**, responde **status 200 com corpo
-vazio**.
+## Duas coisas que quem mexer nisto precisa saber
 
-Ou seja: **200 não é sucesso aqui.** Um downloader que confie no código de
-status vai gravar centenas de arquivos vazios, e o log vai dizer que deu tudo
-certo. A verificação tem que ser sobre o conteúdo: tamanho do arquivo e a
-assinatura `%PDF` nos primeiros bytes.
+### 200 não é sucesso
 
-O fluxo do Actions já confere isso, em [download-diario.yml](.github/workflows/download-diario.yml).
+O `mostra_edicao.php` responde `Erro.` quando não recebe chave nenhuma. Mas
+quando recebe uma chave **inválida**, responde **status 200 com corpo vazio**.
+
+Um downloader que confie no código de status grava centenas de arquivos vazios,
+e o log diz que deu tudo certo. A conferência tem que ser sobre o conteúdo:
+tipo, tamanho e a assinatura `%PDF` nos primeiros bytes. O downloader confere, e
+o [fluxo do Actions](.github/workflows/download-diario.yml) confere de novo.
+
+### O PDF não tem valor legal
+
+O próprio IOERJ nomeia o arquivo `Nao_Possui_Valor_Legal_*.pdf`. O que se coleta
+aqui serve para consulta, busca e pesquisa, e não substitui a publicação
+oficial. O portal precisa dizer isso onde a pessoa lê, e não num rodapé.
+
+O caminho completo até o PDF, com o truque da chave, está no [CLAUDE.md](CLAUDE.md).
 
 ---
 

@@ -21,23 +21,24 @@ portal-normas-doerj/
 ├── STEPS.md                em que ponto estamos
 ├── .gitignore              PDF não entra no git
 ├── .github/workflows/
-│   └── download-diario.yml agendamento pronto, sem downloader para chamar
-├── tools/                  vazio. Aqui vai o downloader
+│   └── download-diario.yml coleta agendada, dias úteis às 9h
+├── tools/
+│   └── doerj_download.py   a coleta. Só biblioteca padrão
 ├── backend/db/             vazio
 ├── backend/api/            vazio
 ├── src/                    vazio
 └── docs/                   vazio
 ```
 
-Nenhum código roda. Nenhum dado foi coletado.
+A coleta funciona e foi provada contra o site. Da extração para frente, nada.
 
 ### O que se sabe da origem
 
 Detalhado no [CLAUDE.md](CLAUDE.md). O resumo de arquitetura:
 
-O IOERJ serve o Diário por `…/portal/modules/conteudoonline/mostra_edicao.php`,
-que recebe uma chave em `?k=`. A chave parece ser um GUID, e a etapa que
-traduz uma data nesse GUID não foi encontrada. Sem ela não há o que buscar.
+O IOERJ serve o Diário em três passos: a data vira base64, a listagem devolve um
+token em base64 triplo, e a chave do PDF é o GUID com uma letra enfiada na
+posição 12. O detalhe está no `CLAUDE.md` e no cabeçalho do downloader.
 
 O endpoint aceita chave inválida em silêncio: responde 200 com corpo vazio.
 Isso não é detalhe de implementação, é restrição de arquitetura. **A camada de
@@ -113,6 +114,8 @@ rápido exclui exatamente quem mais precisa dele.
 | AD-03 | Validação por conteúdo, nunca por status HTTP | o endpoint mente |
 | AD-04 | PDF fora do git | ~80 páginas por dia |
 | AD-05 | Python na coleta e na extração | é onde vivem as bibliotecas de PDF |
+| AD-10 | Coleta sem dependência externa | roda em qualquer Python 3, sem `pip install`, e não quebra quando uma biblioteca muda |
+| AD-11 | O token vem da listagem, não é remontado | o timestamp embutido é regra do IOERJ, que pode mudar amanhã |
 
 ## Decisões adiadas
 

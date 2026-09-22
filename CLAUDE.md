@@ -16,65 +16,57 @@ só descobre que era falsa depois de três camadas construídas.
 
 ---
 
-## Verificado em 2026-09-22, contra o site real
+## Como o site funciona. Verificado em 2026-09-22, baixando PDF de verdade
 
-| O quê | Como se sabe |
-|---|---|
-| `https://www.ioerj.com.br/` responde 302 para `/portal/` | `curl -I` |
-| O portal roda XOOPS; o `portal.ioerj.com.br` é outro site, em WordPress, e é institucional | HTML das duas origens |
-| Existe `…/portal/modules/conteudoonline/mostra_edicao.php` | responde 200 |
-| **Sem parâmetro, ele devolve exatamente `Erro.`** — 5 bytes | `curl` sem query |
-| **Com `?k=<base64>` de uma data, devolve corpo vazio** | testado com `21/09/2026`, `2026-09-21`, `20260921`, `22/09/2026` |
+São três passos:
 
-A última linha é a mais importante, e confirma a armadilha que o handoff
-anunciava: **o endpoint aceita uma chave malformada sem reclamar.** Ele só diz
-`Erro.` quando não há chave nenhuma. Chave presente e inválida sai como resposta
-vazia, com status 200.
+| # | Endereço | O que faz |
+|---|---|---|
+| 1 | `do_ultima_edicao.php` | redireciona por `<meta refresh>` para o passo 2, com a data de hoje |
+| 2 | `do_seleciona_edicao.php?data=<base64 de AAAAMMDD>` | HTML com a lista de cadernos do dia |
+| 3 | `mostra_edicao.php?k=<chave>` | o PDF |
 
-Consequência prática para quem for escrever o downloader: **200 não é sucesso
-aqui.** A verificação tem que ser sobre o corpo — tamanho, tipo do conteúdo,
-assinatura `%PDF`. Um downloader que confie no código de status vai gravar
-centenas de arquivos vazios e o log vai dizer que deu tudo certo.
+**O token da listagem é base64 três vezes** sobre `<GUID><timestamp Unix>`.
+Três camadas, não uma.
 
-### O que não achei
+**A chave do passo 3 não é o GUID.** O `viewer-min.js` monta a URL enfiando uma
+letra no meio do GUID, na posição 12:
 
-A etapa que traduz **data → GUID**. Os caminhos abaixo responderam 404:
-`conteudo.php`, `lista_edicoes.php`, `edicoes.php`, `busca.php`, `pesquisa.php`,
-`lista.php`, `consulta.php`, `mostra_lista.php`. A página do módulo
-(`/portal/modules/conteudoonline/`) é só a casca do portal, sem seletor de data
-no HTML estático — o que sugere que a listagem vem por JavaScript ou por um
-bloco que não é servido nessa URL.
+    k = guid[:12] + "P" + guid[12:]      documento inteiro
+    k = guid[:12] + "D" + guid[12:] + n  só a página n
 
-Segunda rodada, no mesmo dia, para não repetir o caminho depois:
+O `P`, o `D`, o `?` e o `k=` estão no fonte como `String.fromCharCode(80)`,
+`(68)`, `(63)` e `(107)`. Ofuscação leve: não impede ninguém, só custa tempo.
 
-| Onde procurei | O que achei |
-|---|---|
-| HTML do módulo, lista de `<script>` | só scripts do tema: jQuery, carrossel, lightbox. Nenhum seletor de data, nenhuma chamada a `mostra_edicao` |
-| `themes/IOERJV2/js/main.js` e `governo.js` | 404 disfarçado de 200, com 230 bytes |
-| Todos os `href` internos da página | nada aponta para edição do Diário |
-| `/do/` | existe, mas responde 403; é de onde o portal serve CSS do tema |
-| 12 pontos de entrada dentro de `/do/` | todos 404 |
+O GUID também aparece limpo no HTML do visualizador, como `var pd = "..."`.
 
-Conclusão provisória: a listagem de edições não está nesta página. Ou ela mora
-noutro host (`transparencia.ioerj.com.br` e o `asps/login.asp` ainda não foram
-examinados), ou depende de sessão, ou vem de uma chamada que o HTML estático não
-revela. Achar isso passa por abrir o site num navegador e olhar as requisições
-de rede, e não por adivinhar nomes de arquivo.
+### A armadilha do 200
 
----
+`mostra_edicao.php` responde `Erro.` (5 bytes) sem chave nenhuma, e responde
+**200 com corpo vazio** para chave malformada. **200 não é sucesso aqui.** A
+conferência é sobre o conteúdo: `Content-Type`, tamanho mínimo, assinatura
+`%PDF`.
 
-## Recebido de outra sessão, **ainda não verificado**
+Foi isto que atrasou a descoberta: `?k=<base64 da data>` devolvia vazio, e o
+vazio parecia chave inválida. Eram nome de parâmetro e formato de valor errados
+ao mesmo tempo.
 
-Repassado em 2026-09-22, descrevendo um downloader que funcionava. O código não
-chegou a esta máquina. Tratar como pista, não como fato:
+### O que mais se sabe, testado
 
-- o esquema seria **data em base64 → GUID → `?k=`**;
-- havia observações sobre o texto extraído do PDF que não foram detalhadas aqui.
+- Datas passadas funcionam. Testei até 2010, e o acervo parece ir mais longe.
+- Sábado, domingo e feriado devolvem **zero cadernos**, sem erro. É o jeito
+  limpo de detectar dia sem edição.
+- O número de cadernos muda com a época: 5 hoje, 11 em 2010, quando Ministério
+  Público, Defensoria, Justiça Federal, do Trabalho e Eleitoral saíam no DOERJ.
+- Dia com edição extra **repete o nome do caderno**. 15/01/2024 tem duas
+  "Parte I (Poder Executivo)".
+- O servidor manda `Content-Disposition: filename="Nao_Possui_Valor_Legal_*.pdf"`.
 
-O primeiro item bate parcialmente com o que verifiquei: o `?k=` existe e aceita
-base64. Falta a ponte para o GUID.
+### Este PDF não tem valor legal
 
----
+O nome do arquivo diz isso, e é o próprio IOERJ dizendo. O que se coleta serve
+para consulta e busca, e não substitui a publicação oficial. O portal tem que
+dizer isso onde a pessoa lê, e não num rodapé.
 
 ## Regras deste projeto
 

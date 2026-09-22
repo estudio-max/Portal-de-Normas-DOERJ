@@ -11,8 +11,8 @@ etapa funcional concluída.
 | Fase | O que entrega | Status |
 |---|---|---|
 | 0 | Esqueleto, documentação e agendamento | **concluída** |
-| 1 | Downloader do DOERJ Poder Executivo | **bloqueada** — ver abaixo |
-| 2 | Provar que o download roda no GitHub Actions | pendente, depende da 1 |
+| 1 | Downloader do DOERJ Poder Executivo | **concluída** |
+| 2 | Provar que o download roda no GitHub Actions | **em teste** |
 | 3 | Onde os PDFs ficam em definitivo | pendente |
 | 4 | Extração de texto e identificação dos atos | pendente |
 | 5 | Banco e API (`backend/db`, `backend/api`) | pendente |
@@ -25,10 +25,7 @@ etapa funcional concluída.
 Estrutura de pastas, `.gitignore`, `CLAUDE.md` com o que se sabe do site,
 `README.md` com a tabela de etapas, e o fluxo do GitHub Actions.
 
-O repositório está em `estudio-max/Portal-de-Normas-DOERJ`, **privado**, e o
-fluxo de coleta está **desativado** enquanto a Fase 1 não destravar. Ele falharia
-toda manhã de dia útil, e falha diária vira ruído que ninguém lê. Religar é um
-botão em Actions.
+O repositório está em `estudio-max/Portal-de-Normas-DOERJ`, **privado**.
 
 Junto veio uma investigação do site do IOERJ, registrada no `CLAUDE.md`. O achado
 que muda o desenho do downloader: **`mostra_edicao.php` devolve `Erro.` quando
@@ -36,27 +33,36 @@ não recebe chave, mas devolve corpo vazio com status 200 quando a chave é
 inválida.** Quem confiar no código de status grava arquivo vazio e registra
 sucesso no log.
 
-## Fase 1 — downloader. **Bloqueada, e o bloqueio é de informação**
+## Fase 1 — downloader. Concluída em 2026-09-22
 
-O handoff que abriu este projeto descreve `tools/doerj_download.py` como pronto
-e funcionando. **O arquivo não chegou a esta máquina**, e o zip mencionado
-também não. Procurei em `C:\projetos` e em `Downloads`.
+`tools/doerj_download.py`, só biblioteca padrão. O caminho até ele está no
+`CLAUDE.md`: três passos, token em base64 triplo, e uma letra enfiada no meio do
+GUID para montar a chave.
 
-Deliberadamente não escrevi um substituto. O que eu verifiquei sozinho cobre
-metade do caminho — o endpoint `?k=` e a armadilha do 200 vazio — e falta a
-etapa que traduz **data → GUID**, sem a qual não há o que baixar. Escrever um
-arquivo com esse nome que não baixa nada seria pior que a ausência dele: o fluxo
-do Actions passaria a apontar para algo que parece existir.
+O downloader que existiria nunca chegou a esta máquina. Este foi reconstruído
+por engenharia reversa do `viewer-min.js`.
 
-### Duas saídas, e a escolha é de quem tem o contexto
+### O que ele faz
 
-| # | Caminho | O que exige |
-|---|---|---|
-| A | Trazer o downloader que já funciona | copiar o arquivo ou colar o conteúdo |
-| B | Reconstruir do zero | continuar a engenharia reversa a partir do que está no `CLAUDE.md`, provavelmente lendo o JavaScript da listagem de edições |
+- lê o token da listagem em vez de inventá-lo, porque o timestamp embutido
+  sugere validade curta e a regra é do IOERJ, não nossa;
+- confere `Content-Type`, `%PDF` e tamanho mínimo antes de gravar;
+- grava em `.parcial` e renomeia, para interrupção não deixar meio PDF com nome
+  de arquivo pronto;
+- pula o que já está em disco, porque o cron repete;
+- espera entre requisições, com repetição em caso de falha de rede;
+- numera edição extra a partir da segunda, sem renomear a primeira.
 
-A é barata e preserva conhecimento já pago. B custa tempo incerto: o que falta
-não está no HTML servido, então passa por descobrir como a listagem é montada.
+### Prova
+
+```
+python tools/doerj_download.py --autoteste
+python tools/doerj_download.py --inicio 2026-09-18 --fim 2026-09-22
+```
+
+Resultado em 22/09/2026: edições 171, 172 e 173, de 81, 70 e 41 páginas, em
+sequência e sem buraco. Sábado e domingo saíram como "sem edição". A segunda
+execução pulou os três.
 
 ## Fase 2 — provar que roda no Actions
 
@@ -69,9 +75,8 @@ desenho de automação muda.
 Teste: rodar o fluxo manualmente com uma data conhecida antes de confiar no
 agendamento. Se falhar, as saídas são cron na hospedagem ou runner self-hosted.
 
-Enquanto a Fase 1 estiver bloqueada, esta não roda, e o fluxo está desativado no
-GitHub. Quando houver downloader: religar em Actions, disparar à mão com uma data
-conhecida, e olhar o resultado.
+Com a Fase 1 pronta, o teste é disparar o fluxo à mão com uma data conhecida e
+olhar o resultado.
 
 ## Fase 3 — onde os PDFs ficam
 
@@ -91,9 +96,11 @@ e serve de referência de modelagem — `boletins`, `ato_funcoes` e afins.
 
 | # | Pergunta | Alternativas | Impacto |
 |---|---|---|---|
-| DP-01 | O downloader existente será trazido, ou reconstruo? | (a) trazer; (b) reconstruir | **Alto — trava a Fase 1 e tudo depois** |
-| DP-02 | O repositório no GitHub deve ser criado por mim ou por você? | (a) eu crio com `gh`, mediante sua confirmação; (b) você cria | Médio — o handoff dizia que o último passo era seu |
-| DP-03 | `estudio-max/Portal-de-Normas-DOERJ` público desde o início? | (a) público; (b) privado até a Fase 2 passar | Médio — código de raspagem público antes de funcionar convida cópia de algo quebrado |
+| ~~DP-01~~ | ~~Trazer o downloader ou reconstruir?~~ | reconstruído em 2026-09-22 | resolvido |
+| ~~DP-02~~ | ~~Quem cria o repositório?~~ | criado em 2026-09-22 | resolvido |
+| DP-03 | Abrir o repositório ao público agora que a coleta funciona? | (a) abrir; (b) seguir privado | Médio |
 | DP-04 | Onde os PDFs ficam em definitivo | (a) hospedagem; (b) bucket; (c) só texto, PDF por referência | Alto — decide a Fase 3 e o custo mensal |
 | DP-05 | Que atos entram? Só normas, ou também atos de pessoal | (a) só normas; (b) tudo | Alto — muda a extração e o tamanho do banco |
 | DP-06 | Qual a licença do repositório | — | Baixo |
+| DP-07 | Como o portal deixa claro que o PDF não tem valor legal | (a) aviso fixo na página de cada ato; (b) só na página "sobre" | **Alto — é o risco jurídico do projeto** |
+| DP-08 | Até que ano recompor o acervo | testei 2010 e funcionou | Médio — decide o volume inicial |

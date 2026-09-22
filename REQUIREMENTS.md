@@ -39,10 +39,10 @@ chega sabendo só o assunto também.
 
 | # | Requisito | Status |
 |---|---|---|
-| RF-01 | Baixar o PDF do DOERJ Poder Executivo de uma data | **bloqueado** |
-| RF-02 | Baixar um intervalo de datas, para recompor o acervo | pendente |
-| RF-03 | Rodar sozinho todo dia útil, sem ninguém apertar botão | pendente |
-| RF-04 | Não gravar arquivo vazio nem dar sucesso falso | pendente |
+| RF-01 | Baixar o PDF do DOERJ Poder Executivo de uma data | **implementado** |
+| RF-02 | Baixar um intervalo de datas, para recompor o acervo | **implementado** |
+| RF-03 | Rodar sozinho todo dia útil, sem ninguém apertar botão | parcial — falta provar no Actions |
+| RF-04 | Não gravar arquivo vazio nem dar sucesso falso | **implementado** |
 | RF-05 | Guardar o PDF original, íntegro, como prova | pendente |
 | RF-06 | Extrair o texto do PDF | pendente |
 | RF-07 | Separar o Diário do dia em atos individuais | pendente |
@@ -53,6 +53,7 @@ chega sabendo só o assunto também.
 | RF-12 | Busca por número, por data, por órgão, por assunto | pendente |
 | RF-13 | Página de cada ato, com link para o PDF de origem | pendente |
 | RF-14 | Dizer de onde veio e quando foi coletado | pendente |
+| RF-16 | Dizer, onde a pessoa lê, que o PDF não tem valor legal | pendente |
 | RF-15 | Endereço fixo por ato, que não quebra com o tempo | pendente |
 
 ### RF-01 tem um detalhe que decide tudo
@@ -80,7 +81,7 @@ que "conferido por pessoa".
 | # | Requisito | Por quê |
 |---|---|---|
 | RNF-01 | Educado com o servidor de origem: uma requisição por vez, intervalo entre elas, e para na primeira recusa | é um site de governo, e derrubá-lo encerra o projeto |
-| RNF-02 | Idempotente: rodar duas vezes a mesma data não duplica nada | cron repete, e vai repetir |
+| RNF-02 | Idempotente: rodar duas vezes a mesma data não duplica nada | **implementado.** cron repete, e vai repetir |
 | RNF-03 | Log que diz o que aconteceu de verdade | ver RF-04 |
 | RNF-04 | Nenhuma credencial no repositório | regra do projeto |
 | RNF-05 | Acessível, WCAG 2.1 AA | é serviço público |
@@ -94,7 +95,7 @@ que "conferido por pessoa".
 
 | Fase | Passa quando |
 |---|---|
-| 1 | Baixa o PDF de uma data conhecida, confere que é PDF de verdade, e recusa data inválida em vez de gravar vazio |
+| 1 | passou em 2026-09-22: edições 171 a 173, e fim de semana como "sem edição" |
 | 2 | O mesmo, rodando no GitHub Actions, com o PDF no artifact |
 | 3 | O PDF sobrevive aos 7 dias do artifact |
 | 4 | De um Diário de verdade saem os atos, com número e data certos, conferidos à mão contra o PDF |
@@ -109,6 +110,13 @@ que "conferido por pessoa".
 - Municípios.
 - Consolidação de texto, ou seja, mostrar a norma já com as alterações aplicadas. É trabalho jurídico, não de software.
 - Qualquer coisa que pareça aconselhamento jurídico.
+
+### Uma coisa que NÃO está fora de escopo
+
+Dizer que o PDF coletado **não tem valor legal**. O próprio IOERJ nomeia o
+arquivo `Nao_Possui_Valor_Legal_*.pdf`. Um portal que apresente esse texto como
+se fosse a publicação oficial engana quem o usa para decidir alguma coisa. É o
+RF-16, e ele não é enfeite.
 
 ---
 
