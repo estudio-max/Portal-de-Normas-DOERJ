@@ -69,10 +69,17 @@ CONSULTAS = [
      f"SELECT a.id, LEFT(c.texto, 700) FROM {DE_TEXTO} WHERE {PENEIRA} AND {LIKE}"
      " ORDER BY a.data_pub DESC, a.numero LIMIT 20",
      ("faperj*",) + ("%faperj%",) * 4),
+    # A última página, que a paginação numerada põe a um clique. O Acervo
+    # escolhe os vinte ids só com `atos` e busca o texto depois; pedir o texto
+    # junto com o OFFSET lia 50 mil textos para jogar fora, e levava 5 s.
+    ("última página: escolher os ids",
+     "SELECT a.id FROM atos a ORDER BY a.data_pub DESC, a.numero DESC, a.id"
+     " LIMIT 20 OFFSET 50040", ()),
     ("uma ficha de ato",
      f"SELECT a.id, c.texto FROM {DE} ORDER BY a.data_pub DESC LIMIT 1", ()),
-    # Fora do limite: é o caminho de escape, para termo que o índice não
-    # conhece. Lento por definição, e raro por construção.
+    # Fora do limite: é o caminho de termo curto demais para o índice ("nº 94",
+    # "de"), que vai direto ao LIKE. Lento por definição; fica aqui para
+    # mostrar o que o índice economiza no caso comum.
     ("[escape] a mesma busca sem peneira",
      f"SELECT COUNT(*) FROM {DE} WHERE {LIKE}", ("%faperj%",) * 4),
 ]
@@ -126,7 +133,7 @@ def main() -> int:
     print()
     if lentas:
         print(f"{len(lentas)} consulta(s) acima do limite.")
-        print("Ver o cabeçalho deste arquivo e a junção em Acervo::procurar().")
+        print("Ver o cabeçalho deste arquivo e a junção em Acervo::buscar().")
         return 1
     print("todas dentro do limite")
     return 0

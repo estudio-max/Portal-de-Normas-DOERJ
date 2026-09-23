@@ -131,10 +131,9 @@ final class Acervo
      * devolveria vazio e esconderia o que o `LIKE` acharia.
      *
      * **O que esta peneira não sabe achar** é pedaço no meio de palavra —
-     * "duarte" procurando por "arte". Quando ela não acha nada, `buscar()`
-     * refaz sem ela e o `LIKE` resolve. Quando ela acha alguma coisa mas não
-     * tudo, o resultado vem incompleto, e esse é o preço aceito para a busca
-     * responder em meio segundo em vez de quatro e meio.
+     * "Duarte" procurando por "arte". É o preço aceito para a busca responder
+     * em meio segundo em vez de quatro e meio, e a tela de resultado vazio diz
+     * isso a quem procura.
      */
     private static function frase(string $q): ?string
     {
@@ -149,12 +148,19 @@ final class Acervo
         return '"' . str_replace('"', ' ', $q) . '"';
     }
 
-    /** O `ORDER BY` pedido, sempre de dentro de `ORDENS`. */
+    /**
+     * O `ORDER BY` pedido, sempre de dentro de `ORDENS`.
+     *
+     * O `a.id` no fim é o desempate que faltava. Metade das matérias de um dia
+     * não tem número, e sem uma chave única no fim o MySQL fica livre para
+     * devolver os empatados em qualquer ordem — e a mesma matéria pode cair em
+     * duas páginas, ou em nenhuma.
+     */
     private static function ordem(array $f): string
     {
         $sql = (self::ORDENS[$f['ordem'] ?? ''] ?? self::ORDENS['data'])[1];
         $dir = ($f['dir'] ?? '') === 'asc' ? 'ASC' : 'DESC';
-        return str_replace('%s', $dir, $sql);
+        return str_replace('%s', $dir, $sql) . ', a.id';
     }
 
     /** @return array<int,int> Os anos que o acervo tem, do mais recente. */
@@ -190,28 +196,17 @@ final class Acervo
     /**
      * A busca, com os filtros combinando entre si.
      *
-     * Quando há termo de texto, roda primeiro com a peneira do índice. Se ela
-     * não devolver nada, **refaz sem peneira**: pode ser que a pessoa esteja
-     * procurando um pedaço no meio de uma palavra, que é coisa que o índice não
-     * sabe achar e o `LIKE` sabe. Assim a busca é rápida no caso comum e
-     * continua certa no caso raro — o preço é uma segunda consulta lenta
-     * justamente quando a primeira não achou nada, que é quando dá para esperar.
+     * Até 2026-09-23 havia aqui uma segunda tentativa: quando a peneira do
+     * índice não achava nada, a busca refazia varrendo o texto inteiro, para o
+     * caso de alguém procurar um pedaço no meio de uma palavra. Saiu depois de
+     * medida. Em todos os termos testados — números de ato como "50.477" e
+     * "4.312/2009", processos inteiros e pela metade, nomes —, quando o índice
+     * achava zero a varredura também achava zero. Ela nunca devolveu nada, e
+     * custava 10 segundos a cada erro de digitação.
      *
      * @return array{itens: array<int,array<string,mixed>>, total: int}
      */
     public static function buscar(array $f, int $pagina = 1): array
-    {
-        $r = self::procurar($f, $pagina, true);
-        if ($r['total'] === 0 && !empty($f['q']) && self::frase($f['q']) !== null) {
-            return self::procurar($f, $pagina, false);
-        }
-        return $r;
-    }
-
-    /**
-     * @return array{itens: array<int,array<string,mixed>>, total: int}
-     */
-    private static function procurar(array $f, int $pagina, bool $peneirar): array
     {
         $onde = [];
         $p = [];
@@ -229,16 +224,17 @@ final class Acervo
             // — "tecnolog" dentro de "tecnologia" — não acharia nada.
             //
             // Então os dois juntos: o índice **peneira** as linhas candidatas e
-            // o `LIKE` **confirma** cada uma. O resultado é o mesmo do `LIKE`
-            // sozinho, e a busca custa 0,1 s. Quando a peneira não serve, quem
-            // chama refaz sem ela — ver `buscar()`.
+            // o `LIKE` **confirma** cada uma. O resultado é o do `LIKE` sozinho
+            // para palavra inteira e começo de palavra, e a busca custa 0,1 s.
+            // Termo curto demais para o índice vai direto ao `LIKE` — ver
+            // `frase()`.
             //
             // Quatro marcadores diferentes para o mesmo valor, e não `:q`
             // repetido: com preparo nativo — que é o que usamos, porque a
             // emulação transforma parâmetro em concatenação — **o MySQL aceita
             // cada nome uma vez só**. Repetido, ele devolve "Invalid parameter
             // number" e a busca inteira cai.
-            if ($peneirar && ($frase = self::frase($f['q'])) !== null) {
+            if (($frase = self::frase($f['q'])) !== null) {
                 $onde[] = 'MATCH(c.texto) AGAINST (:ft IN BOOLEAN MODE)';
                 $p['ft'] = $frase;
             }
@@ -327,6 +323,30 @@ final class Acervo
         $pagina = max(1, $pagina);
         $salto = ($pagina - 1) * self::POR_PAGINA;
 
+        // PRIMEIRO A PÁGINA, DEPOIS O TEXTO
+        //
+        // Pedir o texto junto com o `OFFSET` fazia o MySQL ler o começo de
+        // cada matéria que ia pular: para mostrar a página 2.504, lia 50 mil
+        // textos e jogava 50.040 fora — 5 segundos. Enquanto a paginação era só
+        // "Anterior" e "Próxima", ninguém chegava lá; com a numerada, o fim da
+        // lista fica a um clique. Então a página é escolhida só com `atos`, que
+        // é leve, e o texto é buscado para as vinte que sobraram.
+        $ids = array_column(Banco::todos(
+            'SELECT a.id FROM ' . $conta . $filtro
+            . ' ORDER BY ' . self::ordem($f)
+            . ' LIMIT ' . self::POR_PAGINA . ' OFFSET ' . $salto,
+            $p
+        ), 'id');
+        if (!$ids) {
+            return ['itens' => [], 'total' => $total];
+        }
+        $marcas = [];
+        $pi = [];
+        foreach (array_values($ids) as $k => $id) {
+            $marcas[] = ':i' . $k;
+            $pi['i' . $k] = $id;
+        }
+
         // As relações vêm como texto concatenado, e não numa segunda consulta
         // por linha: vinte atos por página dariam vinte idas ao banco para
         // mostrar uma etiqueta.
@@ -337,10 +357,10 @@ final class Acervo
             . ' LEFT(c.texto, 700) AS inicio,'
             . ' (SELECT GROUP_CONCAT(DISTINCT r.tipo_relacao ORDER BY r.tipo_relacao)'
             . '  FROM ato_relacoes r WHERE r.ato_id = a.id) AS relacoes'
-            . ' FROM ' . $de . $filtro
-            . ' ORDER BY ' . self::ordem($f)
-            . ' LIMIT ' . self::POR_PAGINA . ' OFFSET ' . $salto,
-            $p
+            . ' FROM atos a JOIN ato_corpo c ON c.ato_id = a.id'
+            . ' WHERE a.id IN (' . implode(', ', $marcas) . ')'
+            . ' ORDER BY ' . self::ordem($f),
+            $pi
         );
 
         return ['itens' => $itens, 'total' => $total];
