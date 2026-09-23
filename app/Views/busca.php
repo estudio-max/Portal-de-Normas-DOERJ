@@ -50,7 +50,9 @@ $classe_status = [
            aria-describedby="q-ajuda"
            placeholder="número do ato, palavra da ementa, processo, órgão">
     <p class="apoio" id="q-ajuda">
-      Aceita número do ato, palavras da ementa, número de processo e nome de órgão.
+      Aceita número do ato, palavras da ementa, número de processo e nome de
+      órgão. Procura a palavra inteira ou o começo dela: <em>tecnolog</em>
+      encontra <em>tecnologia</em>, mas <em>arte</em> não encontra <em>Duarte</em>.
     </p>
   </div>
 

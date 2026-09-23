@@ -335,17 +335,33 @@ def main() -> int:
     if not o.jsonl:
         p.error("informe ao menos um .jsonl, ou --autoteste")
 
-    falhas = 0
+    falhas = []
+    total = 0
     for caminho in o.jsonl:
         try:
             novos, atualizados, pulados = carregar(caminho, o.pdf)
         except Exception as e:
             print(f"{caminho.name}: FALHOU, {e}", file=sys.stderr)
-            falhas += 1
+            falhas.append((caminho.name, str(e)))
             continue
+        total += novos + atualizados
         extra = f", {pulados} sem identificador" if pulados else ""
         print(f"{caminho.name}: {novos} novo(s), {atualizados} atualizado(s){extra}")
 
+    # O resumo repete as falhas no fim, e por escrito.
+    #
+    # Com 214 arquivos, uma linha de erro no meio do log não é vista por
+    # ninguém. Foi assim que a edição de 18/05/2026 ficou de fora, com suas 352
+    # matérias, e o buraco só apareceu porque as contagens foram comparadas
+    # depois. Quem carrega um acervo inteiro precisa ler uma linha, não 214.
+    print(f"\n{len(o.jsonl) - len(falhas)} de {len(o.jsonl)} arquivo(s), "
+          f"{total} matéria(s)")
+    if falhas:
+        print(f"\n{len(falhas)} ARQUIVO(S) NÃO ENTRARAM:", file=sys.stderr)
+        for nome, erro in falhas:
+            print(f"  {nome}: {erro}", file=sys.stderr)
+        print("\nCada arquivo é uma transação: o que falhou não entrou pela"
+              " metade.", file=sys.stderr)
     return 1 if falhas else 0
 
 

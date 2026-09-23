@@ -624,7 +624,12 @@ def extrair(caminho: Path) -> list[dict]:
         atos = achar_atos(texto)
         primeiro = atos[0] if atos else {}
 
-        cabecalho = primeiro.get("cabecalho")
+        # Cortado em 400 porque bloco em caixa alta mais longo que isso não é
+        # cabeçalho: é o detector tendo engolido o que vinha depois. Uma
+        # instrução normativa de 378 caracteres derrubou a carga de uma edição
+        # inteira — 352 matérias — por não caber na coluna. O texto completo não
+        # depende disto: vive em `ato_corpo`, e o cabeçalho sai dele.
+        cabecalho = (primeiro.get("cabecalho") or "")[:400] or None
         ementa = achar_ementa(texto, cabecalho) if cabecalho else None
         ementa, ocultados_na_ementa = mascarar(ementa)
         ocultados += ocultados_na_ementa

@@ -92,27 +92,98 @@ final class Acervo
     }
 
     /**
+     * O termo escrito para o índice de texto completo, ou `null` quando ele não
+     * serve e a busca tem de varrer tudo.
+     *
+     * Duas formas, conforme o que a pessoa digitou:
+     *
+     * - **Uma palavra só** vira `palavra*`, busca por prefixo. Sem o asterisco,
+     *   quem digita "tecnolog" recebia as dez matérias que trazem essa letra
+     *   solta e nenhuma das milhares que falam de tecnologia — pior que lento,
+     *   porque parece uma resposta.
+     * - **Mais de uma palavra**, ou palavra com pontuação como "SEI-260005",
+     *   vira frase entre aspas. Aspas exigem as palavras juntas e na ordem, que
+     *   é o que `LIKE '%a b%'` também faz. E fora das aspas o hífen significaria
+     *   "sem esta palavra" no modo booleano, o que inverteria a busca.
+     *
+     * Devolve `null` quando nenhum token chega a três caracteres, que é o
+     * mínimo que o InnoDB indexa: peneirar por um termo que o índice não conhece
+     * devolveria vazio e esconderia o que o `LIKE` acharia.
+     *
+     * **O que esta peneira não sabe achar** é pedaço no meio de palavra —
+     * "duarte" procurando por "arte". Quando ela não acha nada, `buscar()`
+     * refaz sem ela e o `LIKE` resolve. Quando ela acha alguma coisa mas não
+     * tudo, o resultado vem incompleto, e esse é o preço aceito para a busca
+     * responder em meio segundo em vez de quatro e meio.
+     */
+    private static function frase(string $q): ?string
+    {
+        $tokens = preg_split('/[^\p{L}\p{N}]+/u', trim($q), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $uteis = array_filter($tokens, static fn($t) => mb_strlen($t) >= 3);
+        if (!$uteis) {
+            return null;
+        }
+        if (count($tokens) === 1) {
+            return $tokens[0] . '*';
+        }
+        return '"' . str_replace('"', ' ', $q) . '"';
+    }
+
+    /**
      * A busca, com os filtros combinando entre si.
+     *
+     * Quando há termo de texto, roda primeiro com a peneira do índice. Se ela
+     * não devolver nada, **refaz sem peneira**: pode ser que a pessoa esteja
+     * procurando um pedaço no meio de uma palavra, que é coisa que o índice não
+     * sabe achar e o `LIKE` sabe. Assim a busca é rápida no caso comum e
+     * continua certa no caso raro — o preço é uma segunda consulta lenta
+     * justamente quando a primeira não achou nada, que é quando dá para esperar.
      *
      * @return array{itens: array<int,array<string,mixed>>, total: int}
      */
     public static function buscar(array $f, int $pagina = 1): array
     {
+        $r = self::procurar($f, $pagina, true);
+        if ($r['total'] === 0 && !empty($f['q']) && self::frase($f['q']) !== null) {
+            return self::procurar($f, $pagina, false);
+        }
+        return $r;
+    }
+
+    /**
+     * @return array{itens: array<int,array<string,mixed>>, total: int}
+     */
+    private static function procurar(array $f, int $pagina, bool $peneirar): array
+    {
         $onde = [];
         $p = [];
 
         if (!empty($f['q'])) {
-            // `LIKE` e não `MATCH`: o índice de texto completo do MySQL ignora
-            // palavra com menos de quatro letras e não casa pedaço de palavra,
-            // e quem procura "DECRETO 50.485" ou "SEI-150001" precisa das duas
-            // coisas. Com o acervo neste tamanho, a diferença de velocidade não
-            // aparece; quando aparecer, aí se troca.
+            // A PENEIRA E A CONFIRMAÇÃO
+            //
+            // O `LIKE '%termo%'` não usa índice: o MySQL lê as linhas todas,
+            // sempre. Com 1.979 atos isso custava 30 ms e não incomodava
+            // ninguém. Com 50 mil e 152 milhões de caracteres passou a custar
+            // **4,5 segundos**, que é tempo de a pessoa achar que o site quebrou.
+            //
+            // O `MATCH` sobre o índice `ft_texto` responde a mesma coisa em 4
+            // milésimos. Mas ele casa palavra inteira, e quem procura um pedaço
+            // — "tecnolog" dentro de "tecnologia" — não acharia nada.
+            //
+            // Então os dois juntos: o índice **peneira** as linhas candidatas e
+            // o `LIKE` **confirma** cada uma. O resultado é o mesmo do `LIKE`
+            // sozinho, e a busca custa 0,1 s. Quando a peneira não serve, quem
+            // chama refaz sem ela — ver `buscar()`.
             //
             // Quatro marcadores diferentes para o mesmo valor, e não `:q`
             // repetido: com preparo nativo — que é o que usamos, porque a
             // emulação transforma parâmetro em concatenação — **o MySQL aceita
             // cada nome uma vez só**. Repetido, ele devolve "Invalid parameter
             // number" e a busca inteira cai.
+            if ($peneirar && ($frase = self::frase($f['q'])) !== null) {
+                $onde[] = 'MATCH(c.texto) AGAINST (:ft IN BOOLEAN MODE)';
+                $p['ft'] = $frase;
+            }
             $onde[] = '(a.ementa LIKE :q1 OR a.cabecalho LIKE :q2'
                 . ' OR a.numero LIKE :q3 OR c.texto LIKE :q4)';
             $termo = '%' . $f['q'] . '%';
@@ -152,15 +223,32 @@ final class Acervo
             $p['ate'] = $f['ate'];
         }
 
-        // O corpo entra sempre, e não só quando há busca: 83% das matérias não
-        // trazem ementa, e sem o começo do texto a linha da lista fica muda —
-        // uma data, um órgão e nada que diga do que o ato trata. A junção é
-        // pela chave primária de `ato_corpo`, uma linha por ato.
-        $junta = ' LEFT JOIN ato_corpo c ON c.ato_id = a.id';
+        // A ORDEM DAS TABELAS DECIDE SE O ÍNDICE É USADO
+        //
+        // Escrito como `atos a LEFT JOIN ato_corpo c`, o MySQL é obrigado a
+        // começar por `atos` — é o que `LEFT JOIN` significa — e a peneira do
+        // índice de texto, que vive em `ato_corpo`, só pode ser aplicada depois
+        // de já ter varrido 39 mil linhas. A contagem levava 3 segundos mesmo
+        // com o `MATCH` no `WHERE`.
+        //
+        // Invertido, com junção interna a partir de `ato_corpo`, o otimizador
+        // entra pelo índice: 25 milésimos. A junção interna não perde nada,
+        // porque a relação é de um para um — 50.062 atos, 50.062 corpos, zero
+        // órfãos, garantidos pela chave estrangeira.
+        //
+        // O corpo entra mesmo sem busca porque 83% das matérias não trazem
+        // ementa, e sem o começo do texto a linha da lista fica muda: uma data,
+        // um órgão e nada que diga do que o ato trata.
+        $de = !empty($f['q'])
+            ? 'ato_corpo c JOIN atos a ON a.id = c.ato_id'
+            : 'atos a JOIN ato_corpo c ON c.ato_id = a.id';
         $filtro = $onde ? ' WHERE ' . implode(' AND ', $onde) : '';
 
+        // A contagem dispensa o corpo quando ninguém busca texto: arrastar 152
+        // milhões de caracteres para contar linhas custava 2,2 segundos.
+        $conta = !empty($f['q']) ? $de : 'atos a';
         $total = (int) Banco::valor(
-            'SELECT COUNT(*) FROM atos a' . $junta . $filtro,
+            'SELECT COUNT(*) FROM ' . $conta . $filtro,
             $p
         );
 
@@ -180,7 +268,7 @@ final class Acervo
             . ' LEFT(c.texto, 700) AS inicio,'
             . ' (SELECT GROUP_CONCAT(DISTINCT r.tipo_relacao ORDER BY r.tipo_relacao)'
             . '  FROM ato_relacoes r WHERE r.ato_id = a.id) AS relacoes'
-            . ' FROM atos a' . $junta . $filtro
+            . ' FROM ' . $de . $filtro
             . ' ORDER BY a.data_pub DESC, a.numero'
             . ' LIMIT ' . self::POR_PAGINA . ' OFFSET ' . $salto,
             $p

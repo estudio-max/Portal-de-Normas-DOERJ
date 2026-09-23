@@ -8,18 +8,20 @@ Falha com código 1 quando alguma passa do limite.
 
 POR QUE ISTO EXISTE
 
-A busca por texto é `texto LIKE '%termo%'`, que não usa índice nenhum: o MySQL
-lê as linhas todas, sempre. Com 1.979 matérias isso não aparece. O acervo está
-indo para dezenas de milhares, e o mesmo código passa a varrer centenas de
-megabytes a cada tecla de quem pesquisa.
+A busca por texto era `texto LIKE '%termo%'`, que não usa índice nenhum: o
+MySQL lê as linhas todas, sempre. Com 1.979 matérias custava 30 ms. Com 50.062
+e 152 milhões de caracteres passou a custar 4,5 segundos.
 
-A tabela tem `FULLTEXT KEY ft_texto`, criado desde a primeira migração e nunca
-usado, porque `MATCH ... AGAINST` casa palavra inteira e `LIKE` casa pedaço —
-e quem procura "5007515" dentro de "ID Funcional nº 5007515-2" precisa do
-pedaço. Trocar um pelo outro não é ajuste de desempenho, é mudança de
-comportamento, e merece ser decidida com número na mesa em vez de no susto.
+Hoje o índice `ft_texto` peneira e o `LIKE` confirma, e a mesma busca custa
+pouco mais de um décimo de segundo. Este arquivo existe para que a próxima vez
+que isso escorregar apareça em número, e não em reclamação de quem usa.
 
-Este arquivo é o número na mesa.
+Medido em 2026-09-23, com 50.062 atos:
+
+    busca por palavra       4,50 s -> 0,12 s
+    busca por processo      3,81 s -> 0,13 s
+    busca por ID funcional  3,54 s -> 0,02 s
+    contagem sem filtro     2,20 s -> 0,01 s
 """
 
 from __future__ import annotations
@@ -30,36 +32,52 @@ import time
 
 import pymysql
 
-# (nome, SQL, parâmetros) — as consultas do portal, não consultas inventadas.
+# As consultas são as do `app/Acervo.php`, copiadas de lá.
+#
+# Medidor que mede consulta inventada não mede nada. Quando o Acervo mudar, este
+# arquivo muda junto — e a última da lista, sem peneira, fica de propósito para
+# mostrar o que o índice está economizando.
+LIKE = ("(a.ementa LIKE %s OR a.cabecalho LIKE %s"
+        " OR a.numero LIKE %s OR c.texto LIKE %s)")
+PENEIRA = "MATCH(c.texto) AGAINST (%s IN BOOLEAN MODE)"
+# Com busca de texto o Acervo entra por `ato_corpo`, para o otimizador poder
+# usar o índice: por `atos` primeiro, o LEFT JOIN o obriga a varrer tudo.
+DE_TEXTO = "ato_corpo c JOIN atos a ON a.id = c.ato_id"
+DE = "atos a JOIN ato_corpo c ON c.ato_id = a.id"
+
 CONSULTAS = [
     ("lista, primeira página",
-     "SELECT a.id FROM atos a LEFT JOIN ato_corpo c ON c.ato_id=a.id"
+     f"SELECT a.id, LEFT(c.texto, 700) FROM {DE}"
      " ORDER BY a.data_pub DESC, a.numero LIMIT 20", ()),
-    ("contagem total",
-     "SELECT COUNT(*) FROM atos a LEFT JOIN ato_corpo c ON c.ato_id=a.id", ()),
-    ("filtro de CT&I",
-     "SELECT COUNT(*) FROM atos a WHERE a.e_cti = 1", ()),
+    ("contagem sem filtro", "SELECT COUNT(*) FROM atos a", ()),
+    ("filtro de CT&I", "SELECT COUNT(*) FROM atos a WHERE a.e_cti = 1", ()),
     ("filtro por entidade",
      "SELECT COUNT(*) FROM atos a WHERE a.entidade_sistema = %s", ("faperj",)),
     ("filtro por natureza",
      "SELECT COUNT(*) FROM atos a WHERE EXISTS (SELECT 1 FROM ato_natureza n"
      " WHERE n.ato_id = a.id AND n.natureza = %s)", ("fomento",)),
-    ("busca por palavra no texto",
-     "SELECT COUNT(*) FROM atos a LEFT JOIN ato_corpo c ON c.ato_id=a.id"
-     " WHERE a.ementa LIKE %s OR a.cabecalho LIKE %s OR a.numero LIKE %s"
-     " OR c.texto LIKE %s", ("%faperj%",) * 4),
-    ("busca por número de processo",
-     "SELECT COUNT(*) FROM atos a LEFT JOIN ato_corpo c ON c.ato_id=a.id"
-     " WHERE a.ementa LIKE %s OR a.cabecalho LIKE %s OR a.numero LIKE %s"
-     " OR c.texto LIKE %s", ("%SEI-260005%",) * 4),
-    ("busca por ID funcional",
-     "SELECT COUNT(*) FROM atos a LEFT JOIN ato_corpo c ON c.ato_id=a.id"
-     " WHERE a.ementa LIKE %s OR a.cabecalho LIKE %s OR a.numero LIKE %s"
-     " OR c.texto LIKE %s", ("%5007515%",) * 4),
+    ("busca: palavra",
+     f"SELECT COUNT(*) FROM {DE_TEXTO} WHERE {PENEIRA} AND {LIKE}",
+     ("faperj*",) + ("%faperj%",) * 4),
+    ("busca: número de processo",
+     f"SELECT COUNT(*) FROM {DE_TEXTO} WHERE {PENEIRA} AND {LIKE}",
+     ('"SEI-260005"',) + ("%SEI-260005%",) * 4),
+    ("busca: ID funcional",
+     f"SELECT COUNT(*) FROM {DE_TEXTO} WHERE {PENEIRA} AND {LIKE}",
+     ("5007515*",) + ("%5007515%",) * 4),
+    ("busca: a lista que vai à tela",
+     f"SELECT a.id, LEFT(c.texto, 700) FROM {DE_TEXTO} WHERE {PENEIRA} AND {LIKE}"
+     " ORDER BY a.data_pub DESC, a.numero LIMIT 20",
+     ("faperj*",) + ("%faperj%",) * 4),
     ("uma ficha de ato",
-     "SELECT a.*, c.texto FROM atos a LEFT JOIN ato_corpo c ON c.ato_id=a.id"
-     " ORDER BY a.data_pub DESC LIMIT 1", ()),
+     f"SELECT a.id, c.texto FROM {DE} ORDER BY a.data_pub DESC LIMIT 1", ()),
+    # Fora do limite: é o caminho de escape, para termo que o índice não
+    # conhece. Lento por definição, e raro por construção.
+    ("[escape] a mesma busca sem peneira",
+     f"SELECT COUNT(*) FROM {DE} WHERE {LIKE}", ("%faperj%",) * 4),
 ]
+
+SEM_LIMITE = ("[escape] a mesma busca sem peneira",)
 
 
 def ligar():
@@ -98,16 +116,17 @@ def main() -> int:
             cur.execute(sql, params)
             cur.fetchall()
             gasto = time.perf_counter() - comeco
-        marca = "ok   " if gasto <= a.limite else "LENTA"
+        livre = nome in SEM_LIMITE
+        marca = "  -  " if livre else ("ok   " if gasto <= a.limite else "LENTA")
         print(f"  {marca} {gasto:6.3f} s  {nome}")
-        if gasto > a.limite:
+        if gasto > a.limite and not livre:
             lentas.append((nome, gasto))
     c.close()
 
     print()
     if lentas:
-        print(f"{len(lentas)} consulta(s) acima do limite. A busca por texto usa")
-        print("LIKE, que lê a tabela inteira: ver o cabeçalho deste arquivo.")
+        print(f"{len(lentas)} consulta(s) acima do limite.")
+        print("Ver o cabeçalho deste arquivo e a junção em Acervo::procurar().")
         return 1
     print("todas dentro do limite")
     return 0
