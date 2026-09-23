@@ -482,6 +482,69 @@ cada carga, passando a mentir justamente quando alguém fosse conferir.
   coluna. Cosmético, e medido.
 - A coleta é automática; extração, carga e publicação ainda são na mão.
 
+## O filtro de CT&I, auditado em 2026-09-23
+
+O João olhou a lista e disse que os resultados não tinham relação real com os
+temas da pasta. Tinha razão: **131 das 352 matérias marcadas eram erro**, e o
+erro era sempre o mesmo — casamento por palavra solta, sem contexto.
+
+| Termo | Trazia | O que era |
+|---|---|---|
+| `tecnolog` | 75 | 74 eram o Centro de Tecnologia de Informação da Casa Civil |
+| `laboratori` | 28 | exame de UPA, cargo de escola |
+| `cientific` | 12 | todas razão social: HEXIS CIENTÍFICA S/A vende reagente |
+| `\bnits?\b` | 12 | o Hospital da PM de **Nit**erói se escreve HPM-NIT |
+| `ciencias` | 3 | a disciplina escolar, em lista de professores |
+
+### A armadilha que vale por todas
+
+**"eficiência" sem acento contém "ciencia".** Cinco padrões procuravam
+`.{0,30}(ciencia|inovacao|tecnolog)` sem fronteira de palavra, e casavam em
+qualquer ato sobre eficiência administrativa — que é metade dos atos de gestão
+do Estado. O `\b` que hoje está ali não é enfeite.
+
+### O que entrou no lugar
+
+Expressões que já nomeiam o campo: desenvolvimento tecnológico, inovação
+tecnológica, base tecnológica, pesquisa e desenvolvimento. Quem escreve
+"desenvolvimento tecnológico" num ato está falando da política; quem escreve
+"tecnologia" pode estar comprando cadeira.
+
+E **PESAGRO e FIPERJ viraram âncora**: são institutos estaduais de pesquisa sob
+a Secretaria de Agricultura, ICT por definição legal, e o exemplo mais limpo de
+CT&I feita por outra pasta.
+
+### O número que interessa, e o que ele diz
+
+O objetivo do filtro é achar o que as **outras pastas** fazem em CT&I — é o que
+justifica o projeto, segundo o próprio João: "saber das iniciativas do interesse
+da SECTI-RJ, mas que são implementadas por todas as pastas".
+
+| | antes | depois |
+|---|---|---|
+| no filtro | 352 | 216 |
+| do sistema SECTI | 201 | 201 |
+| **de outras pastas** | **151**, ~3% certas | **15**, ~80% certas |
+
+As 15 incluem o auxílio financeiro a pesquisadores no orçamento da SEFAZ — R$
+160 milhões e R$ 73 milhões em duas dotações —, um contrato de P&D da CEDAE para
+um sistema de tratamento, o convênio da Polícia Militar com o ISP para pesquisa
+de vitimização, e os atos da PESAGRO e da FIPERJ.
+
+**E quinze é pouco.** Em oito edições esparsas, iniciativa de CT&I fora do
+sistema SECTI é rara de verdade; o filtro mostrava 151 e era ilusão de ruído. A
+lente que o projeto promete não se prova com oito dias de Diário — ela depende
+de anos, que é a DP-12. Isso agora está medido em vez de suposto.
+
+### O que ainda erra, e é conhecido
+
+Três das 15 são limítrofes: "cursos de pós-graduação" num edital de concurso
+(requisito de cargo, não política de formação), uma referência bibliográfica
+dentro de um edital, e "grupos de pesquisa" na composição de um conselho.
+
+Os seis erros viraram teste em `doerj_temas.py --autoteste`, cada um com o número
+de matérias que trazia. Auditoria que não vira teste volta.
+
 ## Dúvidas e decisões pendentes
 
 | # | Pergunta | Alternativas | Impacto |
