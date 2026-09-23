@@ -29,7 +29,7 @@ $atual = static fn (string $r): string => str_starts_with($caminho, $r)
 <meta name="description" content="<?= e($descricao) ?>">
 <?php endif; ?>
 <link rel="preload" href="/assets/fontes/nunito-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="<?= e(ativo('/assets/css/base.css')) ?>">
 </head>
 <body>
 
@@ -52,12 +52,12 @@ $atual = static fn (string $r): string => str_starts_with($caminho, $r)
   <nav class="cabecalho__nav" aria-label="Navegação principal">
     <a href="/"<?= $caminho === '/' ? ' aria-current="page"' : '' ?>>Início</a>
     <a href="/busca"<?= $atual('/busca') ?>>Buscar</a>
-    <a href="/busca?cti=1"<?= '' ?>>Ciência e inovação</a>
+    <a href="/busca?cti=1"<?= '' ?>>Ciência, tecnologia e inovação</a>
     <a href="/sobre"<?= $atual('/sobre') ?>>Sobre</a>
   </nav>
 </header>
 
-<main class="pagina" id="conteudo">
+<main class="pagina<?= !empty($larga) ? ' pagina--larga' : '' ?>" id="conteudo">
 <?= $conteudo ?>
 </main>
 

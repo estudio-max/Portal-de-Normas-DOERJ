@@ -89,6 +89,33 @@ checa(
 checa('texto nulo não dá parágrafo nenhum', paragrafos(null), []);
 checa('linha em branco não vira parágrafo', paragrafos("Primeira.\n\n\nSegunda."), ['Primeira.', 'Segunda.']);
 
+echo "\norgao_curto()\n";
+
+// O papel da sigla da UFF: o que distingue uma pasta da outra.
+checa('tira "Secretaria de Estado de"', orgao_curto('Secretaria de Estado de Polícia Militar'), 'Polícia Militar');
+checa('tira "Secretaria de Estado da"', orgao_curto('Secretaria de Estado da Casa Civil'), 'Casa Civil');
+checa('tira "Secretaria de Estado do"', orgao_curto('Secretaria de Estado do Ambiente e Sustentabilidade'), 'Ambiente e Sustentabilidade');
+checa('não mexe no que não é secretaria', orgao_curto('Controladoria Geral do Estado'), 'Controladoria Geral do Estado');
+checa('caixa alta vira caixa normal', orgao_curto('ATOS DO PODER EXECUTIVO'), 'Atos do poder executivo');
+checa('vazio vira travessão', orgao_curto(''), '—');
+
+echo "\nrotulo_legivel()\n";
+
+checa('fórmula vira caixa normal', rotulo_legivel('ATO DO SECRETÁRIO'), 'Ato do secretário');
+checa('hífen não atrapalha', rotulo_legivel('DESPACHOS DO DIRETOR-GERAL'), 'Despachos do diretor-geral');
+// Uma palavra fora da fórmula e o rótulo fica como o Diário publicou. Caixa
+// baixa às cegas transformaria a sigla em "ccerj".
+checa('sigla desconhecida preserva tudo', rotulo_legivel('DESPACHO DO PRESIDENTE DA CCERJ'), 'DESPACHO DO PRESIDENTE DA CCERJ');
+checa('o que já tem minúscula fica', rotulo_legivel('Decisão proferida na Sessão'), 'Decisão proferida na Sessão');
+
+echo "\njanela_paginas()\n";
+
+checa('poucas páginas: todas', janela_paginas(2, 4), [1, 2, 3, 4]);
+checa('no meio: pontas, vizinhas e reticências', janela_paginas(50, 2504), [1, null, 49, 50, 51, null, 2504]);
+checa('na primeira', janela_paginas(1, 2504), [1, 2, null, 2504]);
+checa('na última', janela_paginas(2504, 2504), [1, null, 2503, 2504]);
+checa('uma página só', janela_paginas(1, 1), [1]);
+
 echo "\n";
 if ($falhas > 0) {
     echo "$falhas prova(s) reprovada(s).\n";

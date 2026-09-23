@@ -44,13 +44,33 @@ final class Acervo
 
     public const POR_PAGINA = 20;
 
+    /**
+     * As ordenações da lista, as mesmas do Portal de Normas da UFF.
+     *
+     * O SQL sai daqui, e não do endereço: a ordem entra no `ORDER BY`, que não
+     * aceita parâmetro, então o que vem do visitante só escolhe uma chave desta
+     * lista. A data de publicação desempata sempre, para a ordem não mudar entre
+     * uma página e a seguinte.
+     */
+    public const ORDENS = [
+        'data'    => ['Data', 'a.data_pub %s, a.numero %s'],
+        'especie' => ['Espécie e número', 'COALESCE(a.tipo, a.rotulo) %s, a.numero %s, a.data_pub DESC'],
+        'orgao'   => ['Órgão', 'a.orgao %s, a.data_pub DESC'],
+        'status'  => ['Status', 'a.status %s, a.data_pub DESC'],
+    ];
+
     /** @return array<string,int> */
     public static function panorama(): array
     {
         $linha = Banco::um(
+            // `dias` e `edicoes` não são a mesma conta, e a home chamava um
+            // pelo nome do outro: 179 dias de publicação viraram "179 edições"
+            // onde havia 214. O Diário sai uma vez por dia útil, mas publica
+            // suplemento quando precisa, e o suplemento é edição.
             'SELECT COUNT(*) AS atos, SUM(e_cti) AS cti,'
-            . ' COUNT(DISTINCT data_pub) AS dias, MIN(data_pub) AS primeiro,'
-            . ' MAX(data_pub) AS ultimo FROM atos'
+            . ' COUNT(DISTINCT data_pub) AS dias,'
+            . ' (SELECT COUNT(*) FROM edicoes) AS edicoes,'
+            . ' MIN(data_pub) AS primeiro, MAX(data_pub) AS ultimo FROM atos'
         ) ?? [];
         return array_map(
             static fn ($v) => is_numeric($v) ? (int) $v : $v,
@@ -127,6 +147,44 @@ final class Acervo
             return $tokens[0] . '*';
         }
         return '"' . str_replace('"', ' ', $q) . '"';
+    }
+
+    /** O `ORDER BY` pedido, sempre de dentro de `ORDENS`. */
+    private static function ordem(array $f): string
+    {
+        $sql = (self::ORDENS[$f['ordem'] ?? ''] ?? self::ORDENS['data'])[1];
+        $dir = ($f['dir'] ?? '') === 'asc' ? 'ASC' : 'DESC';
+        return str_replace('%s', $dir, $sql);
+    }
+
+    /** @return array<int,int> Os anos que o acervo tem, do mais recente. */
+    public static function anos(): array
+    {
+        return array_map('intval', array_column(
+            Banco::todos('SELECT DISTINCT YEAR(data_pub) AS ano FROM atos ORDER BY ano DESC'),
+            'ano'
+        ));
+    }
+
+    /**
+     * Os órgãos, para o filtro, em ordem alfabética.
+     *
+     * Ficam de fora os nomes que começam por "D.O." ou "do Estado": são o
+     * cabeçalho de página de 2010, que o extrator da época leu como nome de
+     * órgão. Estão no acervo, mas oferecer "D.O. 23 Ano XXXVI" como órgão no
+     * menu seria mostrar o defeito como se fosse opção.
+     *
+     * @return array<string,string> slug => nome
+     */
+    public static function orgaos(): array
+    {
+        $linhas = Banco::todos(
+            "SELECT orgao_slug, MIN(orgao) AS orgao FROM atos"
+            . " WHERE orgao_slug <> '' AND orgao NOT LIKE 'D.O.%'"
+            . " AND orgao NOT LIKE 'do Estado%'"
+            . " GROUP BY orgao_slug ORDER BY orgao"
+        );
+        return array_column($linhas, 'orgao', 'orgao_slug');
     }
 
     /**
@@ -222,6 +280,17 @@ final class Acervo
             $onde[] = 'a.data_pub <= :ate';
             $p['ate'] = $f['ate'];
         }
+        // O ano vira intervalo de datas, e não `YEAR(a.data_pub) = :ano`:
+        // função aplicada à coluna impede o MySQL de usar o índice de data.
+        if (!empty($f['ano'])) {
+            $onde[] = 'a.data_pub BETWEEN :ano_ini AND :ano_fim';
+            $p['ano_ini'] = $f['ano'] . '-01-01';
+            $p['ano_fim'] = $f['ano'] . '-12-31';
+        }
+        if (!empty($f['orgao'])) {
+            $onde[] = 'a.orgao_slug = :orgao';
+            $p['orgao'] = $f['orgao'];
+        }
 
         // A ORDEM DAS TABELAS DECIDE SE O ÍNDICE É USADO
         //
@@ -269,7 +338,7 @@ final class Acervo
             . ' (SELECT GROUP_CONCAT(DISTINCT r.tipo_relacao ORDER BY r.tipo_relacao)'
             . '  FROM ato_relacoes r WHERE r.ato_id = a.id) AS relacoes'
             . ' FROM ' . $de . $filtro
-            . ' ORDER BY a.data_pub DESC, a.numero'
+            . ' ORDER BY ' . self::ordem($f)
             . ' LIMIT ' . self::POR_PAGINA . ' OFFSET ' . $salto,
             $p
         );

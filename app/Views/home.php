@@ -27,7 +27,7 @@ $naturezas = Acervo::porNatureza();
 
 <p class="numeros">
   <strong><?= number_format($panorama['atos'] ?? 0, 0, ',', '.') ?></strong> matérias publicadas
-  em <strong><?= (int) ($panorama['dias'] ?? 0) ?></strong> edições,
+  em <strong><?= (int) ($panorama['edicoes'] ?? 0) ?></strong> edições,
   de <?= data_br($panorama['primeiro'] ?? null) ?>
   a <?= data_br($panorama['ultimo'] ?? null) ?>.
 </p>

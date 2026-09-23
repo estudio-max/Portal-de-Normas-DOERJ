@@ -59,6 +59,11 @@ PARES = [
     ("--perigo", "#fbecea", 4.5, "selo Revogado"),
     ("--tinta-suave", "--superficie", 4.5, "órgão na tabela"),
     ("--tinta-suave", "--superficie-2", 4.5, "órgão na linha sob o cursor"),
+    # A lista no desenho da UFF, de 2026-09-23.
+    ("#ffffff", "--acento", 4.5, "botão Buscar e página atual"),
+    ("--noite", "--acento-claro", 4.5, "etiqueta de filtro"),
+    ("--tinta", "--acento-claro", 4.5, "Mais filtros aberto"),
+    ("--acento", "--superficie-2", 4.5, "processo na linha sob o cursor"),
 ]
 
 

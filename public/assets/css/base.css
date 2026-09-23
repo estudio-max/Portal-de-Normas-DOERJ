@@ -305,28 +305,7 @@ h3 { font-size: 1.02rem; margin-bottom: .3rem; }
   border-bottom: 1px solid var(--borda);
 }
 
-.filtros { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .8rem 0; }
-.marca {
-  display: inline-flex;
-  gap: .4rem;
-  align-items: center;
-  padding: .25rem .6rem;
-  background: var(--acento-claro);
-  border: 1px solid var(--acento);
-  border-radius: 999px;
-  font-size: .85rem;
-  text-decoration: none;
-  color: var(--noite);
-}
 
-.resultados { list-style: none; padding: 0; margin: 1.2rem 0 0; }
-.resultado {
-  padding: .9rem 0;
-  border-bottom: 1px solid var(--borda);
-}
-.resultado__titulo { font-weight: 700; font-size: 1.04rem; }
-.resultado__origem, .resultado__ementa { margin: .3rem 0 0; }
-.resultado__ementa { font-size: .95rem; }
 
 .selos { display: flex; flex-wrap: wrap; gap: .4rem; margin: .4rem 0 0; }
 .selo {
@@ -348,7 +327,6 @@ a.selo:hover { border-color: var(--acento); color: var(--acento); }
 */
 .selo--fraco { border-color: var(--ressalva-borda); background: var(--ressalva-fundo); color: var(--ressalva-tinta); }
 
-.paginacao { display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem; }
 .voltar { margin: 0 0 .5rem; font-size: .9rem; }
 
 .ficha { margin: 1.2rem 0; display: grid; grid-template-columns: auto 1fr; gap: .3rem 1rem; }
@@ -400,97 +378,357 @@ a.selo:hover { border-color: var(--acento); color: var(--acento); }
 .texto p { margin: 0 0 .55rem; }
 .texto p:last-child { margin-bottom: 0; }
 
-/* ------------------------------------------- tabela de resultados */
+/* ------------------------------------------- lista de atos
+   O desenho é o do Portal de Normas e Atos da UFF (`ActTable.tsx`): quadros
+   brancos, tabela com divisória só entre linhas, ementa em duas linhas, órgão
+   curto, paginação numerada. As cores e a fonte são as do Mapa de CT&I. */
 
-.filtrar { margin: 1.2rem 0 1rem; }
-.filtrar__busca label { display: block; font-weight: 600; margin-bottom: .3rem; }
-.filtrar__busca input {
-  width: 100%;
+.pagina--larga { max-width: 88rem; }
+
+.cabeca { margin-bottom: 1.25rem; }
+.cabeca h1 { margin-bottom: .3rem; }
+.cabeca .apoio { margin: 0; max-width: 62ch; }
+
+.quadro {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+}
+.quadro--filtros { padding: 1rem; }
+.quadro--resultados { overflow: hidden; }
+
+/* A busca: lupa dentro do campo, botão colado à direita. */
+.busca { position: relative; display: flex; gap: .5rem; }
+.busca__lupa {
+  position: absolute;
+  left: .85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--tinta-suave);
+  pointer-events: none;
+}
+.busca input {
+  flex: 1;
+  min-width: 0;
   font: inherit;
-  padding: .6rem .75rem;
-  border: 1px solid var(--borda-forte);
-  border-radius: var(--raio);
+  font-size: .9rem;
+  padding: .7rem .75rem .7rem 2.5rem;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
   background: var(--superficie);
   color: var(--tinta);
 }
-.filtrar__busca .apoio { margin: .3rem 0 0; font-size: .84rem; }
+.busca input:focus { border-color: var(--acento); }
+.busca__botao {
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 600;
+  padding: 0 1.1rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--acento);
+  color: #fff;
+  cursor: pointer;
+}
+.busca__botao:hover { background: var(--noite-2); }
+.ajuda { margin: .4rem 0 0; font-size: .78rem; color: var(--tinta-suave); }
 
-.filtrar__campos {
+/* Espécie, Ano, Status, Mais filtros: quatro colunas, como lá. */
+.grade-filtros {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .75rem;
+  margin-top: 1rem;
+  align-items: end;
+}
+.campo { margin: 0; display: flex; flex-direction: column; gap: .25rem; }
+.campo label { font-size: .78rem; font-weight: 600; color: var(--tinta); }
+.campo select {
+  width: 100%;
+  font: inherit;
+  font-size: .82rem;
+  padding: .5rem .6rem;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--tinta);
+}
+
+/* "Mais filtros" é um <details>: abre e fecha sem script, e o teclado já sabe
+   usar. O painel flutua sobre a lista, no papel da gaveta lateral da UFF. */
+.mais-filtros { position: relative; }
+.mais-filtros__botao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  padding: .5rem .75rem;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  background: var(--superficie);
+}
+.mais-filtros__botao::-webkit-details-marker { display: none; }
+.mais-filtros__botao:hover,
+.mais-filtros[open] .mais-filtros__botao { background: var(--acento-claro); }
+.contador {
+  border-radius: 999px;
+  background: var(--acento);
+  color: #fff;
+  font-size: .7rem;
+  padding: .05rem .45rem;
+}
+.mais-filtros__painel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + .5rem);
+  z-index: 10;
+  width: min(24rem, 90vw);
+  display: grid;
+  gap: .8rem;
+  padding: 1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  box-shadow: var(--sombra-cartao);
+}
+.recortes { border: 0; border-top: 1px solid var(--borda); margin: 0; padding: .75rem 0 0; }
+.recortes legend { font-size: .78rem; font-weight: 600; padding: 0; }
+.recortes label { display: flex; gap: .5rem; align-items: flex-start; font-size: .85rem; margin-top: .4rem; }
+.recortes input { accent-color: var(--acento); margin-top: .15rem; }
+
+.botao-leve {
+  justify-self: start;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 600;
+  padding: .45rem .9rem;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--tinta);
+  text-decoration: none;
+  cursor: pointer;
+}
+.botao-leve:hover { background: var(--acento-claro); }
+
+/* As etiquetas do que está filtrado. */
+.etiquetas { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1rem 0 0; }
+.etiqueta {
+  display: inline-flex;
+  gap: .4rem;
+  align-items: center;
+  padding: .25rem .75rem;
+  border: 1px solid var(--acento);
+  border-radius: 999px;
+  background: var(--acento-claro);
+  color: var(--noite);
+  font-size: .78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.etiqueta:hover { background: var(--superficie); }
+.etiquetas__limpar { margin-left: auto; font-size: .78rem; font-weight: 600; color: var(--tinta-suave); }
+
+/* A contagem, com a ordenação do lado. */
+.contagem {
   display: flex;
   flex-wrap: wrap;
-  gap: .7rem;
-  align-items: flex-end;
-  margin-top: .9rem;
+  justify-content: space-between;
+  align-items: center;
+  gap: .75rem;
+  margin: 1.1rem 0 .75rem;
 }
-.campo { margin: 0; display: flex; flex-direction: column; gap: .2rem; }
-.campo label { font-size: .8rem; color: var(--tinta-suave); font-weight: 600; }
-.campo select {
+.contagem__total { margin: 0; font-size: .95rem; font-weight: 700; }
+.ordenar { margin: 0; display: flex; align-items: center; gap: .5rem; }
+.ordenar label { font-size: .78rem; font-weight: 600; color: var(--tinta-suave); }
+.ordenar select {
   font: inherit;
-  font-size: .92rem;
-  padding: .45rem .5rem;
-  border: 1px solid var(--borda-forte);
-  border-radius: var(--raio);
+  font-size: .82rem;
+  padding: .35rem .6rem;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
   background: var(--superficie);
   color: var(--tinta);
-  max-width: 14rem;
 }
+.ordenar__sentido {
+  display: inline-flex;
+  padding: .45rem;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--tinta-suave);
+}
+.ordenar__sentido:hover { background: var(--acento-claro); }
 
-/*
-  A tabela rola sozinha em tela estreita, dentro do próprio quadro.
-  `tabindex` para quem navega por teclado conseguir rolar sem mouse, e o rótulo
-  para o leitor de tela anunciar o que é essa região.
-*/
-.tabela-rolante { overflow-x: auto; margin-top: 1rem; }
-
+/* A tabela. Divisória só entre linhas, cabeçalho em versalete pequeno. */
+.tabela-rolante { overflow-x: auto; }
 .tabela-atos {
   width: 100%;
+  min-width: 56rem;
   border-collapse: collapse;
-  font-size: .92rem;
-  background: var(--superficie);
-  min-width: 46rem;
+  font-size: .82rem;
+  color: var(--tinta);
 }
-.tabela-atos th {
+.tabela-atos th,
+.tabela-atos td {
+  border: 0;
+  border-bottom: 1px solid var(--borda);
+  padding: .85rem 1rem;
   text-align: left;
+  vertical-align: top;
+}
+.tabela-atos thead th {
+  background: var(--superficie-2);
   font-size: .72rem;
+  font-weight: 700;
   letter-spacing: .04em;
   text-transform: uppercase;
   color: var(--tinta-suave);
-  border-bottom: 2px solid var(--borda-forte);
-  padding: .5rem .6rem;
   white-space: nowrap;
+  padding-top: .7rem;
+  padding-bottom: .7rem;
 }
-.tabela-atos td {
-  border-bottom: 1px solid var(--borda);
-  padding: .65rem .6rem;
-  vertical-align: top;
+.tabela-atos tbody tr:last-child td { border-bottom: 0; }
+.tabela-atos tbody tr:hover td { background: var(--superficie-2); }
+
+/* Larguras fixas nas colunas pequenas e o resto para a ementa — a divisão da
+   UFF (w-28, w-36). Com `min-width` em toda coluna, a soma passava da página e
+   a coluna da ação saía cortada. */
+.col-data, .col-status, .col-acao { width: 7.5rem; }
+/* A UFF cabe em 7rem porque mostra sigla; aqui o nome curto é
+   "Ciência, Tecnologia e Inovação", e precisa de mais. */
+.col-orgao { width: 10rem; }
+.col-especie { width: 12rem; }
+.col-relacoes { width: 8.5rem; }
+.col-acao { text-align: right !important; }
+
+.especie { display: flex; gap: .6rem; align-items: flex-start; }
+.especie__icone {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  background: var(--acento-claro);
+  color: var(--acento);
 }
-.tabela-atos tr:hover td { background: var(--superficie-2); }
+.especie__nome { display: block; font-weight: 700; line-height: 1.35; }
+.especie .selo { margin-top: .3rem; }
 
-.col-especie { font-weight: 600; min-width: 11rem; }
-.col-ementa { min-width: 18rem; }
-.col-orgao { color: var(--tinta-suave); font-size: .86rem; min-width: 9rem; }
-.col-data, .col-relacoes, .col-status { white-space: nowrap; }
-.col-data { font-variant-numeric: tabular-nums; }
-.col-acao a { white-space: nowrap; font-weight: 600; }
-
+/* Duas linhas de ementa, e o resto no `title`, como a UFF faz. Tabela serve
+   para comparar de relance, e sete linhas por ato tiram isso. */
+.ementa {
+  margin: 0;
+  color: var(--tinta-suave);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .processo {
   display: block;
-  margin-top: .25rem;
-  font-size: .8rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--tinta-suave);
+  margin-top: .3rem;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: .75rem;
+  color: var(--acento);
 }
 
+/* Sem caixa alta, ao contrário da UFF: lá a coluna tem sigla, que é curta;
+   aqui tem nome, e "CIÊNCIA, TECNOLOGIA E INOVAÇÃO" não cabia em duas linhas. */
+.orgao {
+  font-size: .75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--tinta-suave);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.col-data { font-size: .78rem; color: var(--tinta-suave); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.relacoes { display: flex; flex-wrap: wrap; gap: .25rem; }
+.nada { color: var(--tinta-suave); }
+.col-acao a { white-space: nowrap; font-weight: 600; }
+
 /*
-  A vigência é marcada por cor E por palavra. Cor sozinha não informa quem não a
+  O status é marcado por cor E por palavra. Cor sozinha não informa quem não a
   distingue — e aqui a informação é se a norma vale ou não vale.
 */
 .selo--vigente  { border-color: #1a7f5a; color: #146245; background: #e6f4ee; }
 .selo--alterado { border-color: var(--ressalva-borda); color: var(--ressalva-tinta); background: var(--ressalva-fundo); }
 .selo--revogado { border-color: var(--perigo); color: var(--perigo); background: #fbecea; }
-.selo--relacao  { font-size: .68rem; letter-spacing: .03em; }
+.selo--relacao  { font-size: .66rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; border-radius: 4px; }
+
+/* A paginação numerada, dentro do quadro. */
+.paginacao {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: .35rem;
+  padding: .8rem 1rem;
+  border-top: 1px solid var(--borda);
+}
+.paginacao__numero,
+.paginacao__passo {
+  min-width: 2.25rem;
+  padding: .35rem .6rem;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  font-size: .8rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  color: var(--tinta-suave);
+  background: var(--superficie);
+}
+.paginacao a:hover { background: var(--acento-claro); }
+.paginacao__numero[aria-current="page"] { background: var(--acento); border-color: var(--acento); color: #fff; }
+.paginacao__passo[aria-disabled="true"] { opacity: .45; }
+.paginacao__buraco { color: var(--tinta-suave); padding: 0 .2rem; }
+
+/* Nenhum resultado: diz o que houve e oferece a saída. */
+.vazio { padding: 3rem 1rem; text-align: center; color: var(--tinta-suave); }
+.vazio__titulo { margin: .6rem 0 .3rem; font-size: 1rem; font-weight: 700; color: var(--tinta); }
+.vazio__dica { max-width: 34rem; margin: .4rem auto; font-size: .85rem; line-height: 1.55; }
+.vazio .botao-leve { display: inline-block; margin-top: .8rem; }
+
+/* No celular a tabela vira cartões, como no portal da UFF. */
+.cartoes { display: none; list-style: none; margin: 0; padding: .5rem; }
+.cartao-ato {
+  padding: .8rem;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--superficie);
+}
+.cartao-ato + .cartao-ato { margin-top: .5rem; }
+.cartao-ato__topo { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; }
+.cartao-ato__nome { font-weight: 700; font-size: .9rem; line-height: 1.3; }
+.cartao-ato__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: .5rem;
+  margin: .45rem 0 0;
+  font-size: .75rem;
+  color: var(--tinta-suave);
+}
+.cartao-ato__meta span:last-child { font-weight: 600; text-align: right; }
+.cartao-ato__ementa { margin: .45rem 0 0; font-size: .82rem; line-height: 1.5; }
+.cartao-ato .selo--cti { margin-top: .45rem; }
 
 @media (max-width: 48rem) {
-  .filtrar__campos { gap: .5rem; }
-  .campo select { max-width: 100%; }
+  .grade-filtros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mais-filtros__painel { left: 0; right: auto; }
+  .cartoes { display: block; }
+  .tabela-rolante { display: none; }
+  .etiquetas__limpar { margin-left: 0; }
 }

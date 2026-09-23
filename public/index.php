@@ -26,13 +26,17 @@ header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 header('Referrer-Policy: same-origin');
 /*
- * Nada de terceiro é carregado: a fonte e o CSS são servidos daqui. Sem
- * `font-src` de propósito — ele cai em `default-src 'self'`, e fonte de CDN
+ * Nada de terceiro é carregado: a fonte, o CSS e o script são servidos daqui.
+ * Sem `font-src` de propósito — ele cai em `default-src 'self'`, e fonte de CDN
  * entregaria o endereço de rede de cada visitante a mais alguém.
+ *
+ * `script-src 'self'` e não mais `'none'`: há um script, e ele só faz o filtro
+ * se aplicar ao ser escolhido, como no portal da UFF. Continua proibido script
+ * embutido na página e script de fora. Sem ele, o botão Buscar faz o mesmo.
  */
 header(
     "Content-Security-Policy: default-src 'self'; img-src 'self' data:; "
-    . "style-src 'self'; script-src 'none'; base-uri 'none'; form-action 'self'; "
+    . "style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'; "
     . "frame-ancestors 'self'"
 );
 header('Content-Type: text/html; charset=utf-8');
@@ -56,17 +60,29 @@ try {
             'status'   => (string) ($_GET['status'] ?? ''),
             'de'       => (string) ($_GET['de'] ?? ''),
             'ate'      => (string) ($_GET['ate'] ?? ''),
+            'ano'      => (string) ($_GET['ano'] ?? ''),
+            'orgao'    => (string) ($_GET['orgao'] ?? ''),
+            'ordem'    => (string) ($_GET['ordem'] ?? ''),
+            'dir'      => (string) ($_GET['dir'] ?? ''),
         ];
         // Filtro que não é de uma lista conhecida vira vazio. Não é sobre
         // injeção — a consulta é parametrizada —, é sobre não devolver zero
         // resultado por causa de um valor que nunca existiu.
         $vigencias = ['Ativo' => 1, 'Alterado' => 1, 'Revogado' => 1];
         foreach (['natureza' => Acervo::NATUREZAS, 'ramo' => Acervo::RAMOS,
-                  'entidade' => Acervo::ENTIDADES,
-                  'status' => $vigencias] as $chave => $validos) {
+                  'entidade' => Acervo::ENTIDADES, 'ordem' => Acervo::ORDENS,
+                  'status' => $vigencias, 'dir' => ['asc' => 1, 'desc' => 1]]
+                 as $chave => $validos) {
             if ($filtros[$chave] !== '' && !isset($validos[$filtros[$chave]])) {
                 $filtros[$chave] = '';
             }
+        }
+        // Estes dois não vêm de lista fixa, então a regra é de forma.
+        if (!preg_match('/^\d{4}$/', $filtros['ano'])) {
+            $filtros['ano'] = '';
+        }
+        if (!preg_match('/^[a-z0-9-]{1,190}$/', $filtros['orgao'])) {
+            $filtros['orgao'] = '';
         }
         $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
         ver('busca', [

@@ -111,6 +111,109 @@ function resumo(?string $texto, int $largura = 190): string
 }
 
 /**
+ * O endereço de um arquivo de `public/` com a data dele no fim.
+ *
+ * Sem isto o navegador guarda o CSS antigo por conta própria e o junta com o
+ * HTML novo: quando a lista mudou para o desenho da UFF, a própria conferência
+ * mostrou a tabela nova com as larguras velhas. A data muda quando o arquivo
+ * muda, e aí o endereço é outro.
+ */
+function ativo(string $caminho): string
+{
+    $arquivo = RAIZ . '/public' . $caminho;
+    return $caminho . '?v=' . (is_file($arquivo) ? filemtime($arquivo) : 0);
+}
+
+/**
+ * O órgão em poucas palavras, para a coluna estreita da tabela.
+ *
+ * No portal da UFF essa coluna mostra a sigla: PROGEPE, PROPPI. O Diário não
+ * publica sigla, publica o nome inteiro, e "Secretaria de Estado de Polícia
+ * Militar" quebrava em quatro linhas. Tirar "Secretaria de Estado de" deixa o
+ * que distingue uma pasta da outra — Polícia Militar, Saúde, Casa Civil —, e o
+ * nome completo continua no `title` da célula e na ficha do ato.
+ */
+function orgao_curto(?string $orgao): string
+{
+    $o = trim((string) $orgao);
+    if ($o === '') {
+        return '—';
+    }
+    $o = preg_replace('/^Secretaria de Estado d[aeo]s?\s+/iu', '', $o) ?? $o;
+    // "ATOS DO PODER EXECUTIVO" vem em caixa alta: são os atos do governador.
+    if (!preg_match('/\p{Ll}/u', $o)) {
+        $o = mb_strtolower($o);
+    }
+    return mb_strtoupper(mb_substr($o, 0, 1)) . mb_substr($o, 1);
+}
+
+/**
+ * As páginas que a paginação mostra: a primeira, a última e as vizinhas da
+ * atual, com reticência no buraco — como no portal da UFF. Com 2.504 páginas,
+ * "Anterior" e "Próxima" sozinhos não levam ninguém ao fim da lista.
+ *
+ * @return array<int,int|null> `null` marca a reticência
+ */
+function janela_paginas(int $atual, int $total): array
+{
+    $janela = [];
+    for ($n = 1; $n <= $total; $n++) {
+        if ($n === 1 || $n === $total || abs($n - $atual) <= 1) {
+            $janela[] = $n;
+        } elseif (end($janela) !== null) {
+            $janela[] = null;
+        }
+    }
+    return $janela;
+}
+
+/**
+ * Palavras que só aparecem em rótulo de fórmula: "ATO DO SECRETÁRIO",
+ * "EXTRATO DE TERMO ADITIVO". Tiradas das 90 mais frequentes dos 1.451 rótulos
+ * do acervo, que cobrem a grande maioria das matérias.
+ */
+const PALAVRAS_DE_ROTULO = [
+    'ADITIVO', 'ADITIVOS', 'APOSTILA', 'APOSTILAS', 'ASSISTENTE', 'ATA', 'ATAS',
+    'ATO', 'ATOS', 'AVISO', 'AVISOS', 'CHEFE', 'COMANDANTE', 'COMUNICADO',
+    'COMUNICADOS', 'CONSELHEIRA', 'CONSELHEIRO', 'CONSELHO', 'CONTRATUAIS',
+    'CONTRATUAL', 'CONTROLADOR', 'CONTROLADORA', 'CONVOCAÇÃO', 'COORDENADOR',
+    'COORDENADORA', 'CORREGEDOR', 'CORREGEDORA', 'DA', 'DAS', 'DE', 'DECRETO',
+    'DELIBERAÇÃO', 'DESPACHO', 'DESPACHOS', 'DESPESA', 'DESPESAS', 'DIRETOR',
+    'DIRETORA', 'DIRETORIA', 'DO', 'DOS', 'E', 'EDITAL', 'EDITAIS', 'EM',
+    'ERRATA', 'EXECUTIVA', 'EXECUTIVO', 'EXERCÍCIO', 'EXTRATO', 'EXTRATOS',
+    'GABINETE', 'GERAL', 'GERENTE', 'GOVERNADOR', 'INSTRUMENTO', 'INSTRUMENTOS',
+    'INSTÂNCIA', 'INTERINA', 'INTERINO', 'JURÍDICA', 'NA', 'NO', 'ORDEM',
+    'ORDENADOR', 'ORDENADORA', 'PORTARIA', 'PREÇOS', 'PRESIDENTE', 'PRESIDENTES',
+    'PRIMEIRA', 'PROCURADOR', 'PROCURADORA', 'REGIONAL', 'REGISTRO', 'REITOR',
+    'REITORA', 'RESOLUÇÃO', 'RESULTADO', 'RETIFICAÇÃO', 'SECRETÁRIA',
+    'SECRETÁRIO', 'SECRETÁRIOS', 'SECUNDÁRIO', 'SERVIÇO', 'SUBCORREGEDOR',
+    'SUBSECRETÁRIA', 'SUBSECRETÁRIO', 'SUPERINTENDENTE', 'TERMO', 'TERMOS', 'VICE',
+];
+
+/**
+ * O rótulo do Diário em caixa normal, quando dá para fazer isso sem estragar.
+ *
+ * O Diário abre cada matéria em caixa alta, e vinte linhas de "ATO DO
+ * SECRETÁRIO" numa tabela gritam. Mas caixa baixa às cegas estraga sigla —
+ * "DESPACHO DO PRESIDENTE DA CCERJ" viraria "da ccerj". Então só muda o rótulo
+ * cujas palavras são **todas** de fórmula; o que tiver qualquer outra palavra
+ * fica exatamente como foi publicado.
+ */
+function rotulo_legivel(?string $rotulo): string
+{
+    $r = trim((string) $rotulo);
+    if ($r === '' || preg_match('/\p{Ll}/u', $r)) {
+        return $r;
+    }
+    $palavras = preg_split('/[\s\-\/]+/u', $r, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    if (array_diff($palavras, PALAVRAS_DE_ROTULO)) {
+        return $r;
+    }
+    $r = mb_strtolower($r);
+    return mb_strtoupper(mb_substr($r, 0, 1)) . mb_substr($r, 1);
+}
+
+/**
  * Remonta os parágrafos do texto publicado, para leitura em tela.
  *
  * O Diário é composto em coluna de pouco mais de sete centímetros, e quebra a
