@@ -110,7 +110,6 @@ RAMOS = {
             r"cadastro estadual de icts",
             r"redes de pesquisa",
             r"grupos de pesquisa",
-            r"entidades vinculadas",
             r"supervisao finalistica",
             r"autonomia universitaria",
             r"conselho estadual de ciencia",
@@ -383,6 +382,27 @@ RUIDO = [
     # Requisito de concurso: "para a comprovação da conclusão de cursos de
     # pós-graduação stricto sensu será aceito o diploma".
     r"(?:conclusao|comprovacao|titulacao|titulo)\s+d[eo]\s+(?:cursos?\s+de\s+)?pos-graduacao",
+    # Progressão funcional e pontuação de concurso. Sessenta e uma matérias
+    # entravam por "cursos de pós-graduação" que eram requisito de cargo.
+    # O alcance vai até a pós-graduação de propósito: apagar só "adicional de
+    # qualificação" deixaria "referente a cursos de pós-graduação lato sensu"
+    # para trás, e o termo casaria do mesmo jeito.
+    r"adicional de qualificacao[^.]{0,80}pos-graduacao",
+    r"adicional de qualificacao",
+    r"pontuacao relativa[^.]{0,60}pos-graduacao",
+    # Contrato de estágio e razão social de faculdade. "Sociedade de Ensino
+    # Superior Estácio de Sá" é o nome da empresa no termo de compromisso, e
+    # "docentes de instituições de ensino superior" é a composição de uma banca:
+    # noventa e seis matérias, quase nenhuma sobre política de ensino superior.
+    r"(?:sociedade|associacao|uniao|centro|organizacao|instituto)\s+d[eo]\s+ensino superior",
+    r"termos? de compromisso de estagio",
+    r"(?:docentes|professores|membros|profissionais)\s+d[eo]\s+(?:instituicoes\s+d[eo]\s+)?ensino superior",
+    # Cláusula-padrão de edital, em quinze matérias: "não viole os direitos de
+    # terceiros, incluindo os de propriedade intelectual".
+    r"direitos de terceiros[^.]{0,40}propriedade intelectual",
+    # Equipamento de laboratório e de hospital, e tabela de preço de serviço.
+    r"incubadoras?\s+(?:biologica|bacteriologica)",
+    r"taxa de incubadora",
 ]
 
 

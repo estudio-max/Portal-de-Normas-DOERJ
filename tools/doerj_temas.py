@@ -237,7 +237,49 @@ def autoteste() -> int:
     ):
         assert not c(erro)["e_cti"], erro
 
+    # --- os cinco que só apareceram com o ano de 2026 inteiro ---
+    #
+    # Oito edições não bastavam para vê-los: cada um aparecia uma ou duas vezes
+    # e passava por exceção. Em 214 edições viraram 219 matérias.
+    for erro in (
+        # 96 matérias. "Sociedade de Ensino Superior Estácio de Sá" é razão
+        # social num termo de estágio, e "docentes de instituições de ensino
+        # superior" é a composição de uma banca.
+        "termo de compromisso de estágio entre a Secretaria de Fazenda, o estudante"
+        " Thiago Borba Andrade e a Sociedade de Ensino Superior Estácio de Sá",
+        "o corpo docente será formado, em sua maioria, por docentes de instituições"
+        " de ensino superior do país ou estrangeiras",
+        # 61 matérias. Progressão funcional e pontuação de concurso.
+        "para fins de concessão do adicional de qualificação referente a cursos de"
+        " pós-graduação lato sensu, mestrado ou doutorado",
+        "para receber a pontuação relativa aos cursos de pós-graduação lato sensu",
+        # 16 matérias. Vocabulário administrativo de qualquer secretaria.
+        "as entidades vinculadas/supervisionadas deverão elaborar o plano anual",
+        # 15 matérias. Cláusula-padrão que está em todo edital.
+        "que não viole os direitos de terceiros, incluindo os de propriedade"
+        " intelectual; f) atente contra a ordem pública",
+        # 13 matérias. Equipamento de laboratório e tabela de preço de serviço.
+        "doação de 26 (vinte e seis) incubadoras biológicas - equipamentos automatizados",
+        "tração, por dia 60025034 taxa de incubadora por hora R$ 8,43",
+    ):
+        assert not c(erro)["e_cti"], erro
+
     # --- e o que precisa continuar entrando ---
+    #
+    # Estes vieram da mesma auditoria e são a razão de o filtro existir: CT&I
+    # feita por pasta que não é a SECTI.
+    for certo in (
+        "o Estado apoiará iniciativas de capacitação, pesquisa e inovação"
+        " tecnológica voltadas ao setor de energia renovável",
+        "convênio com a UFRRJ, com interveniência da Fundação de Apoio à Pesquisa"
+        " Científica e Tecnológica",
+        "a promoção de ações educacionais voltadas a ciência, tecnologia e inovação,"
+        " sob a ótica de gênero",
+        "edital do programa de pós-graduação em saúde coletiva, com bolsas",
+        "aquisição de espectrômetro de massa para o laboratório de pesquisas aplicadas",
+    ):
+        assert c(certo)["e_cti"], certo
+
     r = c("convênio para o desenvolvimento tecnológico do setor naval fluminense")
     assert r["e_cti"] and r["confianca"] == "baixa", r
 
