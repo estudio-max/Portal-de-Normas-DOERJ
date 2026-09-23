@@ -390,3 +390,107 @@ a.selo:hover { border-color: var(--acento); color: var(--acento); }
   .ficha { grid-template-columns: 1fr; gap: 0 0; }
   .ficha dd { margin-bottom: .6rem; }
 }
+
+/*
+  O texto publicado, em parágrafos.
+  A margem pequena entre eles é de propósito: no Diário muita "quebra" é item de
+  uma relação — datas de cronograma, nomes de uma nomeação — e espaço grande
+  entre itens afasta o que pertence junto.
+*/
+.texto p { margin: 0 0 .55rem; }
+.texto p:last-child { margin-bottom: 0; }
+
+/* ------------------------------------------- tabela de resultados */
+
+.filtrar { margin: 1.2rem 0 1rem; }
+.filtrar__busca label { display: block; font-weight: 600; margin-bottom: .3rem; }
+.filtrar__busca input {
+  width: 100%;
+  font: inherit;
+  padding: .6rem .75rem;
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  color: var(--tinta);
+}
+.filtrar__busca .apoio { margin: .3rem 0 0; font-size: .84rem; }
+
+.filtrar__campos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .7rem;
+  align-items: flex-end;
+  margin-top: .9rem;
+}
+.campo { margin: 0; display: flex; flex-direction: column; gap: .2rem; }
+.campo label { font-size: .8rem; color: var(--tinta-suave); font-weight: 600; }
+.campo select {
+  font: inherit;
+  font-size: .92rem;
+  padding: .45rem .5rem;
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  color: var(--tinta);
+  max-width: 14rem;
+}
+
+/*
+  A tabela rola sozinha em tela estreita, dentro do próprio quadro.
+  `tabindex` para quem navega por teclado conseguir rolar sem mouse, e o rótulo
+  para o leitor de tela anunciar o que é essa região.
+*/
+.tabela-rolante { overflow-x: auto; margin-top: 1rem; }
+
+.tabela-atos {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .92rem;
+  background: var(--superficie);
+  min-width: 46rem;
+}
+.tabela-atos th {
+  text-align: left;
+  font-size: .72rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+  border-bottom: 2px solid var(--borda-forte);
+  padding: .5rem .6rem;
+  white-space: nowrap;
+}
+.tabela-atos td {
+  border-bottom: 1px solid var(--borda);
+  padding: .65rem .6rem;
+  vertical-align: top;
+}
+.tabela-atos tr:hover td { background: var(--superficie-2); }
+
+.col-especie { font-weight: 600; min-width: 11rem; }
+.col-ementa { min-width: 18rem; }
+.col-orgao { color: var(--tinta-suave); font-size: .86rem; min-width: 9rem; }
+.col-data, .col-relacoes, .col-status { white-space: nowrap; }
+.col-data { font-variant-numeric: tabular-nums; }
+.col-acao a { white-space: nowrap; font-weight: 600; }
+
+.processo {
+  display: block;
+  margin-top: .25rem;
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta-suave);
+}
+
+/*
+  A vigência é marcada por cor E por palavra. Cor sozinha não informa quem não a
+  distingue — e aqui a informação é se a norma vale ou não vale.
+*/
+.selo--vigente  { border-color: #1a7f5a; color: #146245; background: #e6f4ee; }
+.selo--alterado { border-color: var(--ressalva-borda); color: var(--ressalva-tinta); background: var(--ressalva-fundo); }
+.selo--revogado { border-color: var(--perigo); color: var(--perigo); background: #fbecea; }
+.selo--relacao  { font-size: .68rem; letter-spacing: .03em; }
+
+@media (max-width: 48rem) {
+  .filtrar__campos { gap: .5rem; }
+  .campo select { max-width: 100%; }
+}

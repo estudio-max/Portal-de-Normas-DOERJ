@@ -24,7 +24,7 @@ $atual = static fn (string $r): string => str_starts_with($caminho, $r)
   mod_headers. Ver docs/publicacao.md.
 -->
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
-<title><?= e($titulo) ?> — Portal de Normas do DOERJ</title>
+<title><?= e($titulo) ?> — DOERJ fácil</title>
 <?php if (!empty($descricao)): ?>
 <meta name="description" content="<?= e($descricao) ?>">
 <?php endif; ?>
@@ -45,8 +45,8 @@ $atual = static fn (string $r): string => str_starts_with($caminho, $r)
       <path d="M9 13h6M9 17h4"/>
     </svg>
     <a href="/" class="cabecalho__titulo">
-      <strong>SECTI-RJ</strong>
-      <span>Portal de Normas do Diário Oficial</span>
+      <strong>DOERJ fácil</strong>
+      <span>Diário Oficial do Estado do Rio de Janeiro</span>
     </a>
   </div>
   <nav class="cabecalho__nav" aria-label="Navegação principal">

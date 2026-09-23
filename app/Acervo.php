@@ -139,6 +139,10 @@ final class Acervo
             $onde[] = 'a.tipo = :tipo';
             $p['tipo'] = $f['tipo'];
         }
+        if (!empty($f['status'])) {
+            $onde[] = 'a.status = :status';
+            $p['status'] = $f['status'];
+        }
         if (!empty($f['de'])) {
             $onde[] = 'a.data_pub >= :de';
             $p['de'] = $f['de'];
@@ -162,10 +166,15 @@ final class Acervo
         $pagina = max(1, $pagina);
         $salto = ($pagina - 1) * self::POR_PAGINA;
 
+        // As relações vêm como texto concatenado, e não numa segunda consulta
+        // por linha: vinte atos por página dariam vinte idas ao banco para
+        // mostrar uma etiqueta.
         $itens = Banco::todos(
             'SELECT a.id, a.tipo, a.numero, a.data_pub, a.data_ato, a.orgao,'
-            . ' a.unidade, a.ementa, a.ementa_inferida, a.cabecalho,'
-            . ' a.e_cti, a.confianca, a.entidade_sistema, a.pagina'
+            . ' a.unidade, a.ementa, a.ementa_inferida, a.cabecalho, a.rotulo, a.processo,'
+            . ' a.e_cti, a.confianca, a.entidade_sistema, a.pagina, a.status,'
+            . ' (SELECT GROUP_CONCAT(DISTINCT r.tipo_relacao ORDER BY r.tipo_relacao)'
+            . '  FROM ato_relacoes r WHERE r.ato_id = a.id) AS relacoes'
             . ' FROM atos a' . $junta . $filtro
             . ' ORDER BY a.data_pub DESC, a.numero'
             . ' LIMIT ' . self::POR_PAGINA . ' OFFSET ' . $salto,

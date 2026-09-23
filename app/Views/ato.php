@@ -3,9 +3,17 @@
 declare(strict_types=1);
 ob_start();
 
+/*
+ * O título da ficha, na ordem do que informa mais.
+ *
+ * 84% das matérias não têm ato numerado, e para elas o rótulo que o próprio
+ * Diário usa — "EXTRATO DE TERMO ADITIVO", "DESPACHO DO ORDENADOR DE DESPESAS"
+ * — diz muito mais que "Matéria de 22/09/2026", que era o que aparecia antes e
+ * não informava nada.
+ */
 $titulo_ato = ($ato['tipo'] && $ato['numero'])
     ? $ato['tipo'] . ' nº ' . $ato['numero']
-    : ($ato['cabecalho'] ?: 'Matéria de ' . data_br($ato['data_pub']));
+    : ($ato['cabecalho'] ?: ($ato['rotulo'] ?: 'Matéria de ' . data_br($ato['data_pub'])));
 
 /** Quem revogou de vez este ato — só revogação total derruba a norma. */
 $revogado = array_filter(
@@ -68,6 +76,24 @@ $parciais = array_filter(
   <dt>Publicado por</dt>
   <dd><?= e($ato['unidade']) ?></dd>
 <?php endif; ?>
+
+<?php if (!empty($ato['processo'])): ?>
+  <dt>Processo</dt>
+  <dd>
+    <a href="<?= e(url_com(['q' => $ato['processo']], '/busca')) ?>"><?= e($ato['processo']) ?></a>
+    <span class="apoio">— ver os outros atos do mesmo processo</span>
+  </dd>
+<?php endif; ?>
+
+  <dt>Vigência</dt>
+  <dd>
+    <span class="selo <?= ['Ativo'=>'selo--vigente','Alterado'=>'selo--alterado','Revogado'=>'selo--revogado'][$ato['status']] ?? '' ?>">
+      <?= $ato['status'] === 'Ativo' ? 'Vigente' : e($ato['status']) ?>
+    </span>
+<?php if ($ato['status'] === 'Ativo'): ?>
+    <span class="apoio">— nenhum ato deste acervo o revogou</span>
+<?php endif; ?>
+  </dd>
 
   <dt>Identificador na Imprensa Oficial</dt>
   <dd><?= e($ato['id_ioerj'] ?: '—') ?></dd>
@@ -153,7 +179,11 @@ $parciais = array_filter(
 <?php endif; ?>
 
 <h2>Texto publicado</h2>
-<div class="texto"><?= nl2br(e($ato['texto'] ?? '')) ?></div>
+<div class="texto">
+<?php foreach (paragrafos($ato['texto'] ?? '') as $p): ?>
+  <p><?= e($p) ?></p>
+<?php endforeach; ?>
+</div>
 
 <h2>Na fonte</h2>
 <p class="prosa">

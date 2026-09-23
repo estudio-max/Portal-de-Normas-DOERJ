@@ -2,7 +2,7 @@
 declare(strict_types=1);
 ob_start();
 ?>
-<h1>Sobre este portal</h1>
+<h1>Sobre o DOERJ fácil</h1>
 
 <div class="prosa">
 <p>

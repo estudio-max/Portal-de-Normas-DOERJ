@@ -253,6 +253,35 @@ def resolver(cursor, rel: dict) -> str | None:
     return achados[0][0] if len(achados) == 1 else None
 
 
+def atualizar_status(cursor) -> None:
+    """Recalcula a vigência de cada ato a partir das relações recebidas.
+
+    A ordem importa e é esta: **primeiro tudo volta a Ativo**, depois marca o
+    que foi alterado, e só então o que foi revogado.
+
+    Sem o retorno ao início, um ato que deixasse de ser revogado — porque a
+    relação foi corrigida na curadoria — continuaria marcado como revogado para
+    sempre. Status que só anda num sentido acaba errado, e aqui errar quer dizer
+    dizer a alguém que uma norma vigente não vale.
+
+    E **só revogação total derruba a norma**: `parcial = 0`. Revogar o art. 2º
+    não revoga a resolução, e confundir as duas é o erro que a migração 003
+    existe para impedir.
+    """
+    cursor.execute("UPDATE atos SET status = 'Ativo' WHERE status <> 'Ativo'")
+
+    cursor.execute(
+        "UPDATE atos a SET a.status = 'Alterado' WHERE EXISTS ("
+        " SELECT 1 FROM ato_relacoes r WHERE r.ato_destino_id = a.id"
+        " AND (r.tipo_relacao = 'Altera' OR r.parcial = 1))"
+    )
+    cursor.execute(
+        "UPDATE atos a SET a.status = 'Revogado' WHERE EXISTS ("
+        " SELECT 1 FROM ato_relacoes r WHERE r.ato_destino_id = a.id"
+        " AND r.tipo_relacao = 'Revoga' AND r.parcial = 0)"
+    )
+
+
 def processar(ensaio: bool) -> tuple[int, int, int]:
     ligacao = ligar()
     gravadas = resolvidas = 0
@@ -292,6 +321,10 @@ def processar(ensaio: bool) -> tuple[int, int, int]:
                              r["trecho"]),
                         )
                     gravadas += 1
+
+        if not ensaio:
+            with ligacao.cursor() as c:
+                atualizar_status(c)
 
         if ensaio:
             ligacao.rollback()

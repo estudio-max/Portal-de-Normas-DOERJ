@@ -213,9 +213,9 @@ def carregar(caminho: Path, pasta_pdf: Path | None) -> tuple[int, int, int]:
                     r.get("unidade"), apelido(r.get("unidade")),
                     1 if r.get("e_cti") else 0, r.get("confianca"),
                     (r.get("porque_cti") or "")[:80] or None,
-                    r.get("entidade_sistema"),
+                    r.get("entidade_sistema"), r.get("processo"),
                     r.get("ementa"), 1 if r.get("ementa_inferida") else 0,
-                    r.get("cabecalho"), 1 if r.get("reconhecido") else 0,
+                    r.get("cabecalho"), r.get("rotulo"), 1 if r.get("reconhecido") else 0,
                     r.get("atos_no_texto") or 0,
                     str(r.get("pagina") or "")[:8],
                 )
@@ -226,7 +226,8 @@ def carregar(caminho: Path, pasta_pdf: Path | None) -> tuple[int, int, int]:
                         " ano=%s, data_ato=%s, data_pub=%s, orgao=%s, orgao_slug=%s,"
                         " unidade=%s, unidade_slug=%s,"
                         " e_cti=%s, confianca=%s, porque_cti=%s, entidade_sistema=%s,"
-                        " ementa=%s, ementa_inferida=%s, cabecalho=%s, reconhecido=%s,"
+                        " processo=%s,"
+                        " ementa=%s, ementa_inferida=%s, cabecalho=%s, rotulo=%s, reconhecido=%s,"
                         " atos_no_texto=%s, pagina=%s WHERE id=%s",
                         campos + (ident,),
                     )
@@ -236,11 +237,11 @@ def carregar(caminho: Path, pasta_pdf: Path | None) -> tuple[int, int, int]:
                         "INSERT INTO atos (edicao_id, id_ioerj, tipo, numero, ano,"
                         " data_ato, data_pub, orgao, orgao_slug, unidade,"
                         " unidade_slug, e_cti, confianca, porque_cti,"
-                        " entidade_sistema, ementa,"
-                        " ementa_inferida, cabecalho, reconhecido, atos_no_texto,"
+                        " entidade_sistema, processo, ementa,"
+                        " ementa_inferida, cabecalho, rotulo, reconhecido, atos_no_texto,"
                         " pagina, id)"
-                        " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,"
-                        "%s,%s,%s,%s,%s,%s,%s)",
+                        " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,"
+                        "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                         campos + (ident,),
                     )
                     novos += 1

@@ -52,6 +52,13 @@ PARES = [
     ("--borda-forte", "--fundo", 3.0, "borda tracejada"),
     ("--foco", "--fundo", 3.0, "anel de foco"),
     ("--foco", "--superficie", 3.0, "anel de foco sobre cartão"),
+    # Os selos de vigência: a cor diz tanto quanto a palavra, e as duas
+    # precisam ser legíveis.
+    ("#146245", "#e6f4ee", 4.5, "selo Vigente"),
+    ("--ressalva-tinta", "--ressalva-fundo", 4.5, "selo Alterado"),
+    ("--perigo", "#fbecea", 4.5, "selo Revogado"),
+    ("--tinta-suave", "--superficie", 4.5, "órgão na tabela"),
+    ("--tinta-suave", "--superficie-2", 4.5, "órgão na linha sob o cursor"),
 ]
 
 

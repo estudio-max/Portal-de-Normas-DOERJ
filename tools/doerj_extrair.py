@@ -88,6 +88,11 @@ BORDAS = (270, 510)
 # `texto_da_linha` para o porquê de 0,10.
 ESPACO_MINIMO = 0.10
 
+# Quantos pontos duas linhas podem diferir em y e ainda serem a mesma linha da
+# página. A linha de base oscila décimos de ponto entre fontes diferentes na
+# mesma linha; o espaçamento entre linhas neste Diário é de sete pontos.
+TOLERANCIA_DA_LINHA = 2.0
+
 # Blocos cuja fonte predominante é uma destas não são matéria: são o expediente
 # do IOERJ e o cabeçalho decorativo da capa.
 FONTES_FORA = ("UniversLTStd", "FilosofiaBold")
@@ -138,6 +143,29 @@ FIM_DA_EMENTA = re.compile(
 )
 
 NOME_DO_ARQUIVO = re.compile(r"^(\d{4}-\d{2}-\d{2})-(.+?)(?:-(\d+))?$")
+
+# A etiqueta com que o Diário abre cada matéria: "EXTRATO DE TERMO ADITIVO",
+# "DESPACHO DO ORDENADOR DE DESPESAS", "RETIFICAÇÃO". Ver `achar_rotulo`.
+ROTULO = re.compile(
+    r"^(ATOS?\b|DESPACHOS?\b|APOSTILAS?\b|EXTRATOS?\b|AVISOS?\b|EDITAL\b|"
+    r"RETIFICA[ÇC][ÃA]O\b|ERRATA\b|TERMOS?\b|RESULTADOS?\b|CONVOCA[ÇC][ÃA]O\b|"
+    r"COMUNICADOS?\b|PORTARIAS?\b|RESOLU[ÇC][ÕO]ES\b|DECRETOS?\b|"
+    r"DELIBERA[ÇC][ÕO]ES\b|ACORD[ÃA]O\b|DECIS[ÃA]O\b|CONTRATOS?\b|ORDEM\b|"
+    r"INSTRU[ÇC][ÃA]O\b)",
+    re.I,
+)
+
+# O processo. Aparece em 3 de cada 4 matérias, e é a chave que liga edital,
+# contrato, aditivo e pagamento do mesmo objeto — o fio que permite seguir uma
+# decisão do começo ao fim.
+#
+# Dois formatos convivem: o SEI atual (SEI-260003/010809/2024) e o antigo
+# (E-26/003.123/2010), que ainda aparece nas edições de 2010 e 2013.
+PROCESSO = re.compile(
+    r"\b(SEI[- ]?[A-Z]?[- ]?\d{2,6}[/.]\d{3,7}[/.]\d{4}"
+    r"|E[- ]\d{2}[/.]\d{3}[./]\d{3,7}[/.]\d{4})",
+    re.IGNORECASE,
+)
 
 # A entidade que de fato publicou, dentro do sistema da secretaria: FAPERJ,
 # UERJ, UENF, CECIERJ, FAETEC e as demais. O Diário a escreve nas primeiras
@@ -267,6 +295,58 @@ def texto_da_linha(chars: list[tuple[dict, float]]) -> str:
     return "".join(saida)
 
 
+def juntar_pela_linha(pedacos: list[tuple[float, float, str]]) -> list[str]:
+    """Junta os pedaços que estão na mesma linha da página.
+
+    O PyMuPDF corta uma linha em várias quando a justificação abre espaços
+    largos entre as palavras. O tamanho disso não é detalhe: **39% de todas as
+    linhas do acervo — 67.412 de 172.260 — são continuação de uma linha já
+    começada.**
+
+    Na tela o efeito é devastador. Um cronograma de edital da FAPERJ saiu assim:
+
+        DIVULGAÇÃO
+        DE
+        RESULTADO
+        PRELIMINAR:
+        A
+        partir
+        de
+
+    Uma palavra por linha, quando é uma frase só. E os pedaços vêm com o mesmo
+    `y` e `x` crescente, que é exatamente o que os identifica.
+
+    A tolerância existe porque a linha de base oscila décimos de ponto entre
+    fontes diferentes na mesma linha. Dois pontos é folgado para isso e
+    apertado para o espaçamento entre linhas, que neste Diário é de sete.
+    """
+    if not pedacos:
+        return []
+
+    linhas: list[str] = []
+    grupo: list[tuple[float, float, str]] = []
+    base: float | None = None
+
+    for y, x, texto in sorted(pedacos, key=lambda p: (p[0], p[1])):
+        if base is None or abs(y - base) <= TOLERANCIA_DA_LINHA:
+            if base is None:
+                base = y
+            grupo.append((y, x, texto))
+        else:
+            linhas.append(_juntar(grupo))
+            grupo, base = [(y, x, texto)], y
+
+    if grupo:
+        linhas.append(_juntar(grupo))
+    return linhas
+
+
+def _juntar(grupo: list[tuple[float, float, str]]) -> str:
+    # Os pedaços já vêm em ordem de x. O espaço entre eles é o espaço da
+    # justificação, que aqui vale por um só.
+    return re.sub(r" {2,}", " ", " ".join(p[2] for p in grupo)).strip()
+
+
 def blocos_da_pagina(pagina) -> list[tuple[int, float, str, bool]]:
     """Os blocos de matéria, na ordem em que uma pessoa leria."""
     achados = []
@@ -278,7 +358,7 @@ def blocos_da_pagina(pagina) -> list[tuple[int, float, str, bool]]:
             continue
 
         marcas = []
-        linhas = []
+        pedacos = []
         for ln in bl["lines"]:
             chars = []
             for sp in ln["spans"]:
@@ -288,7 +368,9 @@ def blocos_da_pagina(pagina) -> list[tuple[int, float, str, bool]]:
                     c["c"].strip() for c in sp["chars"]
                 ):
                     marcas.append((sp["font"], round(sp["size"], 1)))
-            linhas.append(texto_da_linha(chars))
+            pedacos.append((ln["bbox"][1], ln["bbox"][0], texto_da_linha(chars)))
+
+        linhas = juntar_pela_linha(pedacos)
 
         if not marcas:
             continue
@@ -430,6 +512,33 @@ def achar_ementa(texto: str, cabecalho: str) -> str | None:
     return ementa if len(ementa) > 12 else None
 
 
+def achar_rotulo(texto: str) -> str | None:
+    """A etiqueta que o próprio Diário dá à matéria.
+
+    Existe porque 83% das matérias **não têm ato numerado**, e sem etiqueta a
+    lista mostraria "Matéria de 22/09/2026" em linha após linha — informação
+    nenhuma, repetida vinte vezes por página.
+
+    O Diário já resolve isso sozinho: abre cada matéria com um rótulo —
+    "EXTRATO DE TERMO ADITIVO", "DESPACHO DO ORDENADOR DE DESPESAS",
+    "RETIFICAÇÃO". É ele que a coluna de espécie mostra quando não há número.
+    """
+    for linha in [l.strip() for l in texto.split("\n") if l.strip()][:6]:
+        if len(linha) < 70 and ROTULO.match(linha):
+            return re.sub(r"\s+", " ", linha)[:80]
+    return None
+
+
+def achar_processo(texto: str) -> str | None:
+    """O número do processo, como o ato escreve.
+
+    O primeiro que aparecer: quando há mais de um, o primeiro é o processo da
+    matéria e os demais costumam ser citados dentro dela.
+    """
+    m = PROCESSO.search(texto)
+    return re.sub(r"\s+", "", m.group(1)).upper()[:40] if m else None
+
+
 def achar_unidade(texto: str) -> str | None:
     """A entidade que publicou, dentro do sistema da secretaria.
 
@@ -521,6 +630,8 @@ def extrair(caminho: Path) -> list[dict]:
             "pagina": m["pagina"],
             "orgao": m["orgao"],
             "unidade": achar_unidade(texto),
+            "processo": achar_processo(texto),
+            "rotulo": achar_rotulo(texto),
             "reconhecido": bool(atos),
             "tipo": primeiro.get("tipo"),
             "sigla": primeiro.get("sigla"),
@@ -581,6 +692,54 @@ def autoteste() -> int:
     # Matéria da própria secretaria não tem vinculada.
     assert achar_unidade("SECRETARIA DE ESTADO DA CASA CIVIL\nATO DO SECRETÁRIO") is None
     assert achar_unidade("DECRETO Nº 50.485 DE 21 DE SETEMBRO DE 2026") is None
+
+    # --- pedaços da mesma linha voltam a ser uma linha ---
+    #
+    # O caso é real: o cronograma de um edital da FAPERJ, na edição de
+    # 16/09/2024. Os sete pedaços têm o mesmo y e x crescente.
+    cronograma = [
+        (711.9, 534.3, "DIVULGAÇÃO"), (711.9, 590.2, "DE "),
+        (711.9, 608.9, "RESULTADO"), (711.9, 660.2, "PRELIMINAR:"),
+        (711.9, 714.9, "A "), (711.9, 728.5, "partir"), (711.9, 753.4, "de"),
+        (719.0, 534.3, "27/09/2024."),
+    ]
+    saiu = juntar_pela_linha(cronograma)
+    assert saiu == ["DIVULGAÇÃO DE RESULTADO PRELIMINAR: A partir de",
+                    "27/09/2024."], saiu
+
+    # Fora de ordem na entrada, em ordem na saída: o que manda é a geometria.
+    assert juntar_pela_linha([(10.0, 50.0, "mundo"), (10.0, 20.0, "Olá")]) \
+        == ["Olá mundo"]
+
+    # Linhas de verdade continuam separadas — sete pontos é mais que a
+    # tolerância de dois.
+    assert len(juntar_pela_linha([(10.0, 20.0, "primeira"),
+                                  (17.0, 20.0, "segunda")])) == 2
+
+    # E a oscilação da linha de base entre fontes não separa.
+    assert juntar_pela_linha([(10.0, 20.0, "mesma"), (10.9, 60.0, "linha")]) \
+        == ["mesma linha"]
+
+    assert juntar_pela_linha([]) == []
+
+    # --- o rótulo que o Diário dá à matéria ---
+    assert achar_rotulo("EXTRATO DE TERMO ADITIVO\nCONTRATO Nº 46/2020") \
+        == "EXTRATO DE TERMO ADITIVO"
+    assert achar_rotulo("SECRETARIA DE ESTADO DE SAÚDE\nDESPACHO DO ORDENADOR "
+                        "DE DESPESAS\nDE 21/09/2026") \
+        == "DESPACHO DO ORDENADOR DE DESPESAS"
+    assert achar_rotulo("RETIFICAÇÃO\nD.O. DE 21/09/2026") == "RETIFICAÇÃO"
+    # Texto corrido não tem rótulo, e forçar um seria inventar.
+    assert achar_rotulo("O GOVERNADOR DO ESTADO, no uso de suas atribuições") is None
+
+    # --- o processo, nos dois formatos que convivem no acervo ---
+    assert achar_processo("Processo nº SEI-260003/010809/2024.") == "SEI-260003/010809/2024"
+    assert achar_processo("consta no processo SEI-150001/030096/2023,") == "SEI-150001/030096/2023"
+    assert achar_processo("Processo nº E-26/003.123/2010") == "E-26/003.123/2010"
+    assert achar_processo("sem processo nenhum aqui") is None
+    # O primeiro, quando há mais de um: os outros costumam ser citados.
+    assert achar_processo("SEI-111111/000001/2020 e SEI-222222/000002/2021") \
+        == "SEI-111111/000001/2020"
 
     assert como_nome("ORDEM DE SERVIÇO") == "Ordem de Serviço"
     assert como_nome("RESOLUÇÃO CONJUNTA") == "Resolução Conjunta"

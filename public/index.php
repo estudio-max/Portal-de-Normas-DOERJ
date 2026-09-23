@@ -53,14 +53,17 @@ try {
             'entidade' => (string) ($_GET['entidade'] ?? ''),
             'tipo'     => (string) ($_GET['tipo'] ?? ''),
             'cti'      => (string) ($_GET['cti'] ?? ''),
+            'status'   => (string) ($_GET['status'] ?? ''),
             'de'       => (string) ($_GET['de'] ?? ''),
             'ate'      => (string) ($_GET['ate'] ?? ''),
         ];
         // Filtro que não é de uma lista conhecida vira vazio. Não é sobre
         // injeção — a consulta é parametrizada —, é sobre não devolver zero
         // resultado por causa de um valor que nunca existiu.
+        $vigencias = ['Ativo' => 1, 'Alterado' => 1, 'Revogado' => 1];
         foreach (['natureza' => Acervo::NATUREZAS, 'ramo' => Acervo::RAMOS,
-                  'entidade' => Acervo::ENTIDADES] as $chave => $validos) {
+                  'entidade' => Acervo::ENTIDADES,
+                  'status' => $vigencias] as $chave => $validos) {
             if ($filtros[$chave] !== '' && !isset($validos[$filtros[$chave]])) {
                 $filtros[$chave] = '';
             }

@@ -53,7 +53,11 @@ ARGS = LIGACAO + [BANCO]
 # Todas as migrações, na ordem do nome. O teste aplica o esquema inteiro, e não
 # só a primeira: prova que a sequência de migrações roda do zero, que é como
 # ela vai rodar em produção.
-MIGRACOES = sorted(Path(__file__).resolve().parent.glob("*.sql"))
+#
+# `[0-9]*.sql` e não `*.sql`: o `instalar.sql` mora na mesma pasta e é a soma
+# de todas elas. Com o glob solto, o teste aplicava as migrações e em seguida o
+# instalador, que tenta criar as mesmas tabelas de novo.
+MIGRACOES = sorted(Path(__file__).resolve().parent.glob("[0-9]*.sql"))
 
 
 def roda(sql, esperar_erro=False):

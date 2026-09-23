@@ -77,6 +77,67 @@ function url_com(array $mudancas, string $caminho = '/busca'): string
     return $caminho . ($query ? '?' . $query : '');
 }
 
+/**
+ * Remonta os parágrafos do texto publicado, para leitura em tela.
+ *
+ * O Diário é composto em coluna de pouco mais de sete centímetros, e quebra a
+ * linha onde a coluna acaba — no meio da frase, quase sempre. Reproduzir essas
+ * quebras numa tela larga dá um texto em serrote, que foi como este portal
+ * nasceu e não servia para ler.
+ *
+ * **A junção acontece só aqui, na exibição.** O texto guardado continua fiel ao
+ * que o PDF traz: é dele que sai a busca, e é ele que alguém confere contra a
+ * fonte. Se esta regra errar, o que se perde é a aparência de uma página, e não
+ * o acervo.
+ *
+ * A regra é conservadora de propósito: só junta quando a linha seguinte
+ * **começa em minúscula**, que é sinal inequívoco de frase interrompida.
+ * Cabeçalho, artigo, assinatura e item de lista começam em maiúscula ou em
+ * número, e ficam onde estão.
+ *
+ * @return array<int,string>
+ */
+function paragrafos(?string $texto): array
+{
+    if (!$texto) {
+        return [];
+    }
+
+    $saida = [];
+    foreach (preg_split('/\R/u', $texto) as $linha) {
+        $linha = trim($linha);
+        if ($linha === '') {
+            continue;
+        }
+
+        $anterior = $saida ? $saida[count($saida) - 1] : null;
+        $fechou = $anterior !== null && preg_match('/[.:;!?]$/u', $anterior);
+
+        // Palavra de ligação no fim da linha: a frase está no meio, e o que vem
+        // a seguir continua dela mesmo em caixa alta. É o caso do Diário
+        // escrever "FAPERJ VINCULADA À" e seguir com "SECRETARIA DE ESTADO..."
+        // na linha de baixo — sem isto, as duas ficariam separadas.
+        $pendurada = $anterior !== null && preg_match(
+            '/\b(a|à|às|ao|aos|o|os|as|de|da|do|das|dos|e|em|no|na|nos|nas|'
+            . 'para|por|pelo|pela|com|que|ou|um|uma|seu|sua|este|esta|entre|'
+            . 'sobre|sob)$/ui',
+            $anterior
+        );
+
+        $continua = $anterior !== null && !$fechou && (
+            // Começa em minúscula: sinal inequívoco de frase interrompida.
+            preg_match('/^\p{Ll}/u', $linha) || $pendurada
+        );
+
+        if ($continua) {
+            $saida[count($saida) - 1] = $anterior . ' ' . $linha;
+        } else {
+            $saida[] = $linha;
+        }
+    }
+    return $saida;
+}
+
 function ver(string $view, array $dados = []): void
 {
     extract($dados, EXTR_SKIP);
