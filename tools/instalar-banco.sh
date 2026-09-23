@@ -63,8 +63,9 @@ gunzip -c "$BANCO_DIR/dados.sql.gz" | mysql --defaults-extra-file="$CNF" "$NOME"
 
 # O esperado sai do próprio arquivo que acabou de subir, e não de um número
 # escrito à mão aqui — que envelheceria na carga seguinte e passaria a mentir
-# justamente quando alguém precisasse conferir.
-ESPERADO=$(gunzip -c "$BANCO_DIR/dados.sql.gz" | grep -c "^INSERT INTO \`atos\`" || true)
+# justamente quando alguém precisasse conferir. O `gerar_dump.py` escreve a
+# contagem na primeira linha do .gz.
+ESPERADO=$(gunzip -c "$BANCO_DIR/dados.sql.gz" | head -1 | sed -n 's/^-- atos: //p')
 CARREGADO=$(mysql --defaults-extra-file="$CNF" "$NOME" -N -B -e "SELECT COUNT(*) FROM atos")
 
 echo

@@ -36,9 +36,13 @@ E duas para o dia em que der errado:
 
 - `--complete-insert` — cada `INSERT` nomeia as colunas, então ele sobrevive a
   uma coluna nova no meio da tabela.
-- `--skip-extended-insert` — uma linha por `INSERT`. O arquivo fica maior, mas
-  quando uma linha falha o erro diz qual é. Com `INSERT` estendido, a mensagem
-  aponta para um bloco de mil linhas.
+- `--extended-insert` — várias linhas por `INSERT`. Era o contrário até
+  2026-09-23: uma linha por `INSERT`, para que o erro apontasse a linha exata.
+  Aquilo valia para 2 mil registros. Com 50 mil atos e outros tantos corpos de
+  texto, viram 100 mil comandos, e o MySQL compartilhado da hospedagem leva
+  dezenas de minutos para engolir isso — tempo em que a recarga pode bater num
+  limite do servidor e morrer pela metade. Um dump que não termina não tem erro
+  legível nenhum.
 """
 
 from __future__ import annotations
@@ -57,7 +61,7 @@ OPCOES = [
     "--default-character-set=utf8mb4",
     "--no-create-info",
     "--complete-insert",
-    "--skip-extended-insert",
+    "--extended-insert",
     "--single-transaction",
     "--set-gtid-purged=OFF",
     "--no-tablespaces",
@@ -72,6 +76,18 @@ def achar_mysqldump() -> str:
     for padrao in Path("C:/Program Files/MySQL").glob("*/bin/mysqldump.exe"):
         return str(padrao)
     sys.exit("Não achei o mysqldump. Aponte DOERJ_MYSQLDUMP para ele.")
+
+
+def contar_atos(base: list[str], banco: str) -> int:
+    """Pergunta ao banco quantos atos existem, com a mesma ligação do dump."""
+    cliente = achar_mysqldump().replace("mysqldump", "mysql")
+    comando = [cliente] + base[1:] + [banco, "-N", "-B", "-e",
+                                      "SELECT COUNT(*) FROM atos"]
+    r = subprocess.run(comando, capture_output=True)
+    if r.returncode != 0:
+        sys.exit("não consegui contar os atos:\n"
+                 + r.stderr.decode(errors="replace")[:400])
+    return int(r.stdout.decode().strip().splitlines()[-1])
 
 
 def main() -> int:
@@ -99,8 +115,18 @@ def main() -> int:
         bruto.unlink(missing_ok=True)
         sys.exit("mysqldump falhou:\n" + resultado.stderr.decode(errors="replace")[:600])
 
+    # Quantos atos o arquivo leva, dito por ele mesmo na primeira linha.
+    #
+    # O instalador confere o que carregou contra este número. Antes ele contava
+    # as linhas `INSERT INTO atos`, o que funcionava quando havia uma por ato;
+    # com `--extended-insert` cada comando carrega centenas, e a conta deixou de
+    # bater. Declarar é mais honesto que inferir, e não depende do formato do
+    # dump continuar o mesmo.
+    quantos = contar_atos(comando[:comando.index(banco)], banco)
+
     comprimido = o.saida / "dados.sql.gz"
     with bruto.open("rb") as f, gzip.open(comprimido, "wb", 9) as g:
+        g.write(f"-- atos: {quantos}\n".encode())
         shutil.copyfileobj(f, g)
     bruto.unlink()
 
