@@ -25,7 +25,55 @@ visita, e o que não está no servidor não pode ser servido por engano.
 
 ---
 
-## Roteiro
+## Como está publicado hoje
+
+Publicado por SSH em 2026-09-23. O acesso é por chave — `hostgator-fanara` no
+`~/.ssh/config`, usuário `fanara87`, porta 2222.
+
+```
+/home1/fanara87/
+├─ doerj/                    o projeto
+│  ├─ app/                   fora do alcance do navegador
+│  ├─ config/config.php      a senha mora só aqui, com permissão 600
+│  ├─ public/                servido
+│  └─ instalar-banco.sh      cria as tabelas e carrega os dados
+├─ doerj-banco/_banco/       instalar.sql e dados.sql.gz
+└─ doerj.fanara.com.br  ->   /home1/fanara87/doerj/public
+```
+
+**O document root é um link** para `doerj/public`. Assim a estrutura do
+repositório fica intacta no servidor, e `app/` e `config/` ficam fora do
+alcance do navegador sem precisar de regra nenhuma.
+
+O `.well-known` que estava no document root foi **movido para dentro de
+`doerj/public/`**, e não apagado: é por ele que o certificado SSL se renova.
+A pasta original virou `doerj.fanara.com.br.anterior`, e pode ser removida
+depois que o certificado renovar uma vez sem problema.
+
+### O que falta, e é decisão de quem tem a senha
+
+Criar o usuário MySQL no cPanel, dar acesso a `fanara87_doerj`, e preencher a
+linha `"senha"` em `~/doerj/config/config.php`. Depois:
+
+```bash
+bash ~/doerj/instalar-banco.sh
+```
+
+O script lê a credencial do próprio `config.php` e passa ao MySQL por arquivo
+temporário com permissão 600, apagado ao fim aconteça o que acontecer — **senha
+em linha de comando fica no histórico do shell e na lista de processos da
+máquina**, visível a qualquer outro usuário do servidor compartilhado.
+
+### Uma pendência de faxina
+
+Existem **dois** bancos vazios: `fanara87_doerj` e `fanara87_dourj`. O segundo
+tem o nome trocado e não é usado. Apagar é decisão de quem criou — está aqui
+para não ser esquecido.
+
+---
+
+## Roteiro, para quem for refazer do zero
+
 
 ### 1. O banco
 
