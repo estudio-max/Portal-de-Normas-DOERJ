@@ -342,7 +342,6 @@ GENERICOS = [
     r"inovacao tecnologica",
     r"base tecnologica",
     r"pesquisa e desenvolvimento",
-    r"producao de conhecimento",
 ]
 
 # O sentido jurídico de "ciência". Medido: 51 das 63 matérias que entraram por
@@ -381,6 +380,9 @@ RUIDO = [
     r"incubadora (?:neonatal|de transporte|infantil)",
     # Tabela de adicional de qualificação: "superior pós-graduação deferido".
     r"(?:superior|fundamental|medio)\s+pos-graduacao",
+    # Requisito de concurso: "para a comprovação da conclusão de cursos de
+    # pós-graduação stricto sensu será aceito o diploma".
+    r"(?:conclusao|comprovacao|titulacao|titulo)\s+d[eo]\s+(?:cursos?\s+de\s+)?pos-graduacao",
 ]
 
 
