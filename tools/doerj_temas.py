@@ -211,9 +211,42 @@ def autoteste() -> int:
                  "revelar oportunidades de melhoria ou inovação em seus processos"):
         assert not c(fora)["e_cti"], fora
 
-    # --- genérico entra, mas marcado como baixa ---
-    r = c("aquisição de equipamentos de tecnologia para a repartição")
+    # --- os seis erros que a auditoria de 2026-09-23 achou ---
+    #
+    # Cada um destes entrava no filtro, e juntos eram 131 das 352 matérias. O
+    # motivo era sempre o mesmo: a palavra estava lá, o assunto não.
+    for erro in (
+        # TI corporativa. Era o maior grupo do filtro inteiro, 75 matérias.
+        "SECRETARIA DE ESTADO DA CASA CIVIL CENTRO DE TECNOLOGIA DE INFORMAÇÃO"
+        " E COMUNICAÇÃO DO ESTADO DO RIO DE JANEIRO EXTRATO DE TERMO ADITIVO",
+        "aquisição de equipamentos de tecnologia para a repartição",
+        # Laboratório de saúde e cargo de escola, 28 matérias.
+        "para realização de exames laboratoriais nas Unidades de Pronto Atendimento",
+        "AUXILIAR DE LABORATÓRIO DE ANÁLISES QUÍMICAS Lenice Telles de Andrade",
+        # Razão social de fornecedor, 12 matérias.
+        "ADJUDICO os trabalhos à empresa HEXIS CIENTÍFICA S/A, por ter oferecido",
+        "RECONHEÇO A DÍVIDA, em favor da SINC DO BRASIL INSTRUMENTAÇÃO CIENTÍFICA LTDA.",
+        # NIT é Niterói: o Hospital da PM se escreve HPM-NIT. Doze matérias da
+        # Polícia Militar entravam como ação de inovação.
+        "hpm-nit : 1o SGT PM RG 00000 marcelo dornellas designado para a escala",
+        # Disciplina escolar, em lista de professores.
+        "DISCIPLINA: CIÊNCIAS FÍSICAS E BIOLÓGICAS NOME MUNICIPIO TATIANA DA HORA",
+        # Vínculo previdenciário.
+        "total de 3641 dias de serviço prestado a entidades vinculadas ao sistema"
+        " de previdência social",
+    ):
+        assert not c(erro)["e_cti"], erro
+
+    # --- e o que precisa continuar entrando ---
+    r = c("convênio para o desenvolvimento tecnológico do setor naval fluminense")
     assert r["e_cti"] and r["confianca"] == "baixa", r
+
+    # ICT estadual de outra pasta: é o caso que dá sentido ao filtro.
+    r = c("PARTES: a Empresa de Pesquisa Agropecuária do Estado do Rio de Janeiro")
+    assert r["e_cti"] and r["confianca"] == "alta", r
+
+    r = c("implantação do Núcleo de Inovação Tecnológica da autarquia")
+    assert r["e_cti"], r
 
     print("autoteste: tudo certo")
     return 0

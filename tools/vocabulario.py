@@ -55,6 +55,8 @@ ANCORAS = {
     "polo virtual": r"polo virtual de inovacao",
     "estrategia estadual": r"estrategia estadual de ciencia",
     "ict": r"\bicts?\b|instituic(?:ao|oes) cientific",
+    "ict estadual": r"\bpesagro\b|empresa de pesquisa agropecuaria|"
+                    r"\bfiperj\b|fundacao instituto de pesca",
     "marco legal": r"lei complementar\s*n?[ºo°.]?\s*182|marco legal da inovacao|"
                    r"lei\s*n?[ºo°.]?\s*10\.?973",
 }
@@ -99,12 +101,12 @@ RAMOS = {
             r"politica estadual de ciencia",
             r"sistema estadual de ciencia",
             r"sistemas? municipa(?:l|is) de ciencia",
-            r"consorcios? intermunicipa",
-            r"plano de acao.{0,40}(ciencia|inovacao)",
+            r"consorcios? intermunicipa\w*.{0,60}\b(ciencia|inovacao|tecnolog|pesquisa)",
+            r"plano de acao.{0,40}\\b(ciencia|inovacao)",
             r"mapeamento tecnologico",
             r"prospeccao tecnologica",
             r"diagnostico.{0,30}tecnologic",
-            r"indicadores.{0,30}(ciencia|inovacao|tecnolog)",
+            r"indicadores.{0,30}\\b(ciencia|inovacao|tecnolog)",
             r"cadastro estadual de icts",
             r"redes de pesquisa",
             r"grupos de pesquisa",
@@ -112,7 +114,7 @@ RAMOS = {
             r"supervisao finalistica",
             r"autonomia universitaria",
             r"conselho estadual de ciencia",
-            r"camara tecnica.{0,30}(ciencia|inovacao)",
+            r"camara tecnica.{0,30}\\b(ciencia|inovacao)",
             r"foruns? oficia",
         ],
     },
@@ -123,12 +125,12 @@ RAMOS = {
         "termos": [
             r"pesquisa cientifica",
             r"producao cientifica",
-            r"pos-graduacao",
+            r"(?:programas?|cursos?|oferta|bolsas?|implantacao|realizacao)\s+(?:d[ae]\s+)?pos-graduacao",
             r"ensino superior",
             r"educacao (?:tecnica|tecnologica|profissionalizante)",
             r"ensino (?:tecnico|tecnologico)",
             r"formacao.{0,25}recursos humanos",
-            r"capacitacao.{0,30}(ciencia|tecnolog|inovacao)",
+            r"capacitacao.{0,30}\\b(ciencia|tecnolog|inovacao)",
             r"bolsa de estimulo a inovacao",
             r"bolsa de extensao tecnologica",
             r"bolsa de (?:pesquisa|iniciacao|mestrado|doutorado|pos-doutorado)",
@@ -141,7 +143,7 @@ RAMOS = {
             r"popularizacao da ciencia",
             r"cultura cientifica",
             r"divulgacao cientifica",
-            r"equidade (?:racial|de genero).{0,40}(ciencia|tecnolog|inovacao)",
+            r"equidade (?:racial|de genero).{0,40}\\b(ciencia|tecnolog|inovacao)",
             r"laboratori(?:o|os) de pesquisa",
             r"pesquisador(?:es|as)?\b",
         ],
@@ -162,7 +164,6 @@ RAMOS = {
             r"empreendimentos? inovador",
             r"agencias? de inovacao",
             r"nucleos? de inovacao tecnologica",
-            r"\bnits?\b",
             r"propriedade (?:intelectual|industrial)",
             r"transferencia de tecnologia",
             r"encomenda tecnologica",
@@ -322,14 +323,26 @@ NATUREZA = {
 # matérias entraram por "melhoria ou inovação em seus processos institucionais".
 # ---------------------------------------------------------------------------
 
+# Medido em 1.979 matérias: `tecnolog` solto trazia 75, e 74 delas eram o Centro
+# de Tecnologia de Informação da Casa Civil — TI corporativa, não CT&I.
+# `laboratori` trazia 28: análise clínica de UPA e cargo de escola. `cientific`
+# trazia 12, todas razão social de fornecedor (HEXIS CIENTÍFICA S/A). E
+# `ciencias` pegava a disciplina escolar "ciências físicas e biológicas".
+#
+# Palavra solta não distingue o campo do acaso. O que entra aqui agora são
+# expressões que já nomeiam o campo: quem escreve "desenvolvimento tecnológico"
+# num ato está falando da política, e quem escreve "tecnologia" pode estar
+# comprando computador.
 GENERICOS = [
-    r"tecnolog",
-    r"inovac",
-    r"cientific",
-    r"ciencia e tecnologia",
+    r"ciencia,? e tecnologia",
+    r"ciencia,? tecnologia,? e inovacao",
     r"ciencia, tecnologia",
-    r"ciencias\b",
-    r"laboratori",
+    r"desenvolvimento cientifico",
+    r"desenvolvimento tecnologic",
+    r"inovacao tecnologica",
+    r"base tecnologica",
+    r"pesquisa e desenvolvimento",
+    r"producao de conhecimento",
 ]
 
 # O sentido jurídico de "ciência". Medido: 51 das 63 matérias que entraram por
@@ -349,6 +362,25 @@ RUIDO = [
     r"pesquisa de preco|pesquisa de mercado",
     r"melhoria ou inovacao",
     r"inovacao em seus processos",
+    # A TI corporativa do Estado. O PRODERJ compra computador e contrata rede, o
+    # que é serviço de informática e não política de CT&I. Era o maior grupo do
+    # filtro inteiro: 75 das 352 matérias.
+    r"centro de tecnologia d[ae] informacao",
+    r"tecnologia d[ae] informacao e comunicacao",
+    # Razão social de fornecedor. "HEXIS CIENTÍFICA S/A" vende reagente, e o
+    # nome dela não torna a compra uma ação de ciência.
+    r"cientifica\s+(?:ltda|s\.?\s?a\b|s/a|eireli|me\b|epp\b|comercio|comercial|"
+    r"industria|distribuidora|representac)",
+    r"instrumentacao cientifica",
+    # Disciplina escolar, em lista de professores da SEEDUC.
+    r"ciencias (?:fisicas|biologicas|contabeis|humanas|sociais|exatas|da natureza)",
+    # Vínculo previdenciário, não vinculada da pasta.
+    r"entidades vinculadas ao (?:sistema|regime geral)",
+    # Equipamento médico. "Incubadora" é ambiente de inovação no regimento e
+    # berço aquecido na ambulância, e a segunda acepção é a comum no Diário.
+    r"incubadora (?:neonatal|de transporte|infantil)",
+    # Tabela de adicional de qualificação: "superior pós-graduação deferido".
+    r"(?:superior|fundamental|medio)\s+pos-graduacao",
 ]
 
 

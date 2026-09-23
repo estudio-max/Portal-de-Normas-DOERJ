@@ -21,7 +21,7 @@ consegue olhar dois anos de uma pasta e dizer o que foi feito.
 
 | # | Lente | Para quê |
 |---|---|---|
-| 1 | **CT&I em todas as pastas** | ciência e inovação não acontecem só na SECTI. Saúde, Educação, Ambiente e Fazenda decidem sobre CT&I o tempo todo, e hoje ninguém vê isso junto |
+| 1 | **CT&I em todas as pastas** | ciência, tecnologia e inovação não acontecem só na SECTI. Saúde, Educação, Ambiente e Fazenda decidem sobre CT&I o tempo todo, e hoje ninguém vê isso junto |
 | 2 | **Histórico da SECTI-RJ** | a gestão atual precisa saber o que foi feito antes dela, e a sociedade precisa poder conferir |
 | 3 | **Cada vinculada no seu espaço** | FAPERJ, UERJ, UENF, CECIERJ e FAETEC publicam sob o nome da secretaria. Hoje viram um balaio só |
 
