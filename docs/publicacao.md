@@ -50,19 +50,37 @@ O `.well-known` que estava no document root foi **movido para dentro de
 A pasta original virou `doerj.fanara.com.br.anterior`, e pode ser removida
 depois que o certificado renovar uma vez sem problema.
 
-### O que falta, e é decisão de quem tem a senha
+### O banco
 
-Criar o usuário MySQL no cPanel, dar acesso a `fanara87_doerj`, e preencher a
-linha `"senha"` em `~/doerj/config/config.php`. Depois:
+`fanara87_doerj`, carregado em 2026-09-23 com 2.012 atos, 3.099 classificações,
+23 relações e 8 edições.
+
+O usuário MySQL é o **mesmo do portal da UFF**, `fanara87_UFFN0rm4s`, por
+decisão de quem responde pela conta. Vale saber o que isso implica: a mesma
+credencial abre os dois bancos, e se uma vazar, vazam os dois. Um usuário
+dedicado por projeto isolaria — é troca de conveniência por contenção, e a
+escolha está registrada aqui para poder ser revista.
+
+Para recarregar:
 
 ```bash
 bash ~/doerj/instalar-banco.sh
 ```
 
-O script lê a credencial do próprio `config.php` e passa ao MySQL por arquivo
-temporário com permissão 600, apagado ao fim aconteça o que acontecer — **senha
-em linha de comando fica no histórico do shell e na lista de processos da
-máquina**, visível a qualquer outro usuário do servidor compartilhado.
+O script lê a credencial do próprio `config.php` e a passa ao MySQL por arquivo
+temporário com permissão 600, apagado ao fim aconteça o que acontecer. **Senha
+em linha de comando fica no histórico do shell e na lista de processos**,
+visível a qualquer outro usuário do servidor compartilhado.
+
+#### Uma armadilha que custou uma rodada
+
+A senha reaproveitada tem `#`. O formato `.cnf` trata `#` como início de
+comentário e **corta a senha no meio** — o MySQL respondeu "Access denied", que
+não aponta para lugar nenhum: parecia senha errada, quando o errado era o
+arquivo que a carregava.
+
+A senha vai entre aspas no `.cnf`, e é por isso. Quem for reaproveitar o script
+em outro projeto não repete o erro.
 
 ### Uma pendência de faxina
 
