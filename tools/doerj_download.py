@@ -59,14 +59,16 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import http.cookiejar
+import json
 import re
 import sys
 import time
 import unicodedata
 import urllib.error
 import urllib.request
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 BASE = "https://www.ioerj.com.br/portal/modules/conteudoonline"
@@ -250,6 +252,24 @@ def baixar(
             parcial = caminho.with_suffix(".parcial")
             parcial.write_bytes(conteudo)
             parcial.replace(caminho)
+
+            # A ficha ao lado do PDF. O GUID vive na listagem do IOERJ, e só
+            # esta ferramenta o vê: o extrator recebe o arquivo, não a origem.
+            # Sem isto, o portal não consegue montar o link de volta para a
+            # fonte — e um acervo que não mostra de onde tirou cada coisa é
+            # exatamente o que este projeto não quer ser.
+            caminho.with_suffix(".json").write_text(
+                json.dumps({
+                    "guid": guid,
+                    "url_pdf": f"{BASE}/mostra_edicao.php?k={chave(guid)}",
+                    "caderno": nome,
+                    "data_pub": quando.isoformat(),
+                    "bytes": len(conteudo),
+                    "sha256": hashlib.sha256(conteudo).hexdigest(),
+                    "baixado_em": datetime.now().astimezone().isoformat(timespec="seconds"),
+                }, ensure_ascii=False, indent=1),
+                encoding="utf-8",
+            )
             print(f"{quando}  {len(conteudo) / 1024:7.0f} KB  {caminho.name}")
             gravados += 1
 

@@ -21,9 +21,14 @@
 --
 --   1. `edicoes.guid` guarda o identificador cru. Se a forma de montar a URL
 --      mudar, a URL se remonta de uma vez só, com um UPDATE.
---   2. `edicoes.sha256` guarda a impressão digital do arquivo de onde o texto
---      saiu. Sem o PDF em mãos, é o que permite provar depois que o texto
---      publicado aqui veio daqueles bytes, e não de outros.
+--   2. `edicoes.sha256` guarda a impressão digital do arquivo lido.
+--
+--      **ATENÇÃO: a frase que estava aqui estava errada.** Ela dizia que este
+--      hash permitiria provar depois que o texto veio daqueles bytes. Não
+--      permite: o IOERJ gera um PDF novo a cada requisição, e o mesmo Diário
+--      baixado duas vezes dá hashes diferentes. Quem serve para isso é o
+--      `sha256_texto`, criado na migração `006`. Leia-a antes de confiar neste
+--      campo.
 --
 -- Nenhuma das duas devolve o arquivo. Se o acervo de origem sumir, o portal
 -- continua funcionando como texto e perde a prova. É a troca que a decisão de

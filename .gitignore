@@ -7,6 +7,10 @@
 # guardar e o que entra no banco.
 /extraido/
 
+# Configuracao com credencial. NUNCA versionar: e onde mora a senha do banco,
+# e o modelo ao lado (config.exemplo.php) e o que se versiona no lugar.
+/config/config.php
+
 # Ambiente
 .venv/
 __pycache__/

@@ -214,3 +214,179 @@ select:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
   .cabecalho__nav { gap: 1rem; }
   .pagina { padding: 1.25rem 1rem 2.5rem; }
 }
+
+/* ------------------------------------------------- telas do portal */
+
+/*
+  O primeiro elemento focável da página pula direto para o conteúdo. Some da
+  vista até receber foco pelo teclado — quem navega por tabulação não precisa
+  atravessar o menu inteiro a cada página.
+*/
+.pular {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--realce);
+  color: #1b1b1b;
+  padding: .6rem 1rem;
+  z-index: 10;
+}
+.pular:focus { left: 0; }
+
+.apoio { color: var(--tinta-suave); font-size: .9rem; }
+.numeros { font-size: 1.05rem; }
+h2 { margin-top: 2.2rem; font-size: 1.22rem; }
+h3 { font-size: 1.02rem; margin-bottom: .3rem; }
+
+.busca-grande { margin: 1.4rem 0 1.8rem; }
+.busca-grande label { display: block; font-weight: 600; margin-bottom: .35rem; }
+.busca-grande__linha { display: flex; gap: .5rem; flex-wrap: wrap; }
+.busca-grande input {
+  flex: 1 1 18rem;
+  min-width: 0;
+  font: inherit;
+  padding: .6rem .75rem;
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  color: var(--tinta);
+}
+.botao {
+  font: inherit;
+  font-weight: 600;
+  padding: .6rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: var(--raio);
+  background: var(--acento);
+  color: #fff;
+  cursor: pointer;
+}
+.botao:hover { background: var(--noite-2); }
+
+/* `minmax(0, …)` e não `1fr`: com `1fr`, um nome longo estica a coluna e
+   empurra a grade para fora da tela no telefone. */
+.grade {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: .6rem;
+}
+.grade--larga { grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); }
+.grade a {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .6rem;
+  padding: .7rem .85rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  text-decoration: none;
+  color: var(--tinta);
+}
+.grade a:hover { border-color: var(--acento); }
+.grade__nome { font-weight: 600; font-size: .95rem; }
+.grade__n { color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
+
+.duas-colunas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 1.6rem;
+  margin-top: 1rem;
+}
+.lista-simples { list-style: none; padding: 0; margin: .5rem 0 0; }
+.lista-simples li {
+  display: flex;
+  justify-content: space-between;
+  gap: .8rem;
+  padding: .35rem 0;
+  border-bottom: 1px solid var(--borda);
+}
+
+.filtros { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .8rem 0; }
+.marca {
+  display: inline-flex;
+  gap: .4rem;
+  align-items: center;
+  padding: .25rem .6rem;
+  background: var(--acento-claro);
+  border: 1px solid var(--acento);
+  border-radius: 999px;
+  font-size: .85rem;
+  text-decoration: none;
+  color: var(--noite);
+}
+
+.resultados { list-style: none; padding: 0; margin: 1.2rem 0 0; }
+.resultado {
+  padding: .9rem 0;
+  border-bottom: 1px solid var(--borda);
+}
+.resultado__titulo { font-weight: 700; font-size: 1.04rem; }
+.resultado__origem, .resultado__ementa { margin: .3rem 0 0; }
+.resultado__ementa { font-size: .95rem; }
+
+.selos { display: flex; flex-wrap: wrap; gap: .4rem; margin: .4rem 0 0; }
+.selo {
+  display: inline-block;
+  padding: .1rem .5rem;
+  border: 1px solid var(--borda-forte);
+  border-radius: 999px;
+  font-size: .78rem;
+  color: var(--tinta-suave);
+  background: var(--superficie-2);
+  text-decoration: none;
+}
+a.selo:hover { border-color: var(--acento); color: var(--acento); }
+.selo--cti { border-color: var(--acento); color: var(--acento); background: var(--acento-claro); }
+/*
+  O indício fraco é marcado por cor **e** por texto. Cor sozinha não informa
+  quem não a distingue, e este selo é justamente o que avisa que a classificação
+  pode estar errada.
+*/
+.selo--fraco { border-color: var(--ressalva-borda); background: var(--ressalva-fundo); color: var(--ressalva-tinta); }
+
+.paginacao { display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem; }
+.voltar { margin: 0 0 .5rem; font-size: .9rem; }
+
+.ficha { margin: 1.2rem 0; display: grid; grid-template-columns: auto 1fr; gap: .3rem 1rem; }
+.ficha dt { font-weight: 600; color: var(--tinta-suave); font-size: .9rem; }
+.ficha dd { margin: 0; }
+
+.aviso {
+  margin: 1.2rem 0;
+  padding: .9rem 1rem;
+  border-left: 4px solid var(--ressalva-borda);
+  background: var(--ressalva-fundo);
+  color: var(--ressalva-tinta);
+  border-radius: 0 var(--raio) var(--raio) 0;
+}
+.aviso p { margin: .4rem 0 0; }
+.aviso--revogado { border-left-color: var(--perigo); }
+
+.relacoes { padding-left: 1.1rem; }
+.relacoes li { margin-bottom: .4rem; }
+
+/*
+  O texto vem de PDF de coluna estreita, com quebras que não são de parágrafo.
+  `pre-wrap` preservaria cada uma delas e faria a leitura em telefone virar um
+  serrote. A medida em `ch` é o que segura a linha num tamanho legível.
+*/
+.texto {
+  margin: 1rem 0;
+  padding: 1rem 1.1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  font-size: .94rem;
+  line-height: 1.7;
+  max-width: 78ch;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 40rem) {
+  .ficha { grid-template-columns: 1fr; gap: 0 0; }
+  .ficha dd { margin-bottom: .6rem; }
+}

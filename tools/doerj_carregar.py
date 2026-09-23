@@ -109,36 +109,70 @@ def gravar_edicao(cursor, registro: dict, pdf: Path | None) -> int | None:
         return None
 
     cursor.execute(
-        "SELECT id FROM edicoes WHERE data_pub=%s AND caderno_slug=%s AND sequencia=%s",
+        "SELECT id, guid FROM edicoes"
+        " WHERE data_pub=%s AND caderno_slug=%s AND sequencia=%s",
         (data, caderno, sequencia),
     )
     achado = cursor.fetchone()
-    if achado:
-        return achado[0]
 
     if pdf is None or not pdf.exists():
-        return None
+        return achado[0] if achado else None
 
     bytes_ = pdf.read_bytes()
     sha = hashlib.sha256(bytes_).hexdigest()
     paginas = None
+    sha_texto = None
+    caracteres = None
     try:
         import fitz
 
         with fitz.open(stream=bytes_, filetype="pdf") as d:
             paginas = d.page_count
+            # A impressão digital que sobrevive ao download. O hash dos bytes
+            # não serve: o IOERJ gera um PDF novo a cada requisição, e o mesmo
+            # Diário baixado duas vezes dá números diferentes. Ver a migração
+            # `006-impressao-do-texto.sql`.
+            texto = re.sub(r"\s+", " ", "".join(p.get_text() for p in d)).strip()
+            sha_texto = hashlib.sha256(texto.encode("utf-8")).hexdigest()
+            caracteres = len(texto)
     except Exception:
         pass
 
-    # O GUID não está no JSONL: ele vive na listagem do IOERJ, e o extrator não
-    # o vê. Fica nulo até alguém religar as duas pontas, e a URL fica nula
-    # junto — nula é melhor que inventada.
+    # O GUID e a URL vêm da ficha que o downloader deixa ao lado do PDF: ele é
+    # o único que vê a listagem do IOERJ, e o extrator recebe só o arquivo.
+    #
+    # Sem a ficha, os dois ficam nulos. Nulo é melhor que inventado: a página do
+    # ato passa a dizer que o endereço não foi registrado, em vez de oferecer um
+    # link que não leva a lugar nenhum.
+    guid, url = None, ""
+    ficha = pdf.with_suffix(".json")
+    if ficha.is_file():
+        try:
+            dados = json.loads(ficha.read_text(encoding="utf-8"))
+            guid = dados.get("guid")
+            url = dados.get("url_pdf") or ""
+        except Exception:
+            print(f"  ficha ilegível: {ficha.name}", file=sys.stderr)
+
+    # Edição que já existe é **atualizada**, e não ignorada. Ela pode ter sido
+    # gravada antes de a ficha do downloader existir, e sem isto ficaria para
+    # sempre sem o endereço do PDF: recarregar não consertaria o que está velho,
+    # que é exatamente o que recarregar deveria servir para fazer.
+    if achado:
+        cursor.execute(
+            "UPDATE edicoes SET guid=COALESCE(%s, guid), url_pdf=%s, paginas=%s,"
+            " bytes=%s, sha256=%s, sha256_texto=%s, caracteres=%s WHERE id=%s",
+            (guid, url, paginas, len(bytes_), sha, sha_texto, caracteres, achado[0]),
+        )
+        return achado[0]
+
     cursor.execute(
         "INSERT INTO edicoes (data_pub, caderno, caderno_slug, sequencia, guid,"
-        " url_pdf, paginas, bytes, sha256)"
-        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        " url_pdf, paginas, bytes, sha256, sha256_texto, caracteres)"
+        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
         (data, caderno.replace("-", " ").title(), caderno, sequencia,
-         f"sem-guid-{data}-{caderno}"[:36], "", paginas, len(bytes_), sha),
+         guid or f"sem-guid-{data}-{caderno}"[:36], url, paginas, len(bytes_),
+         sha, sha_texto, caracteres),
     )
     return cursor.lastrowid
 
