@@ -1,0 +1,7 @@
+# Script de shell sai daqui para um servidor Linux, e o CRLF do Windows faz o
+# bash reclamar de `$'\r': command not found` na primeira linha e parar. Foi o
+# que aconteceu com o instalar-banco.sh ao publicar.
+*.sh text eol=lf
+
+# O .sql também é lido pelo mysql do servidor.
+*.sql text eol=lf

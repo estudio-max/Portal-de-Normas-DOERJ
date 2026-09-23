@@ -39,11 +39,33 @@ printf '[client]\nuser=%s\npassword="%s"\nhost=localhost\n' "$USUARIO" "$SENHA" 
 echo "Conferindo o acesso a $NOME..."
 mysql --defaults-extra-file="$CNF" "$NOME" -e "SELECT 1" >/dev/null
 
+# Guarda o que está lá antes de mexer. Nada aqui é fonte primária — o acervo
+# inteiro se refaz dos PDFs — mas refazer leva meia hora e este arquivo leva um
+# minuto.
+GUARDADO=~/doerj-backup-$(date +%Y%m%d-%H%M).sql.gz
+if mysql --defaults-extra-file="$CNF" "$NOME" -e "SELECT 1 FROM atos LIMIT 1" >/dev/null 2>&1; then
+  echo "Guardando o acervo atual em $GUARDADO..."
+  mysqldump --defaults-extra-file="$CNF" --no-tablespaces "$NOME" | gzip > "$GUARDADO"
+fi
+
+# O dump traz só as linhas, sem CREATE TABLE, e o instalar.sql não derruba nada.
+# Sem isto, rodar duas vezes duplicaria o acervo inteiro. A ordem respeita a
+# chave estrangeira: filha primeiro.
+echo "Limpando as tabelas..."
+mysql --defaults-extra-file="$CNF" "$NOME" -e \
+  "DROP TABLE IF EXISTS ato_relacoes, ato_natureza, ato_ramo, ato_corpo, atos, edicoes;"
+
 echo "Criando as tabelas..."
 mysql --defaults-extra-file="$CNF" "$NOME" < "$BANCO_DIR/instalar.sql"
 
 echo "Carregando os dados..."
 gunzip -c "$BANCO_DIR/dados.sql.gz" | mysql --defaults-extra-file="$CNF" "$NOME"
+
+# O esperado sai do próprio arquivo que acabou de subir, e não de um número
+# escrito à mão aqui — que envelheceria na carga seguinte e passaria a mentir
+# justamente quando alguém precisasse conferir.
+ESPERADO=$(gunzip -c "$BANCO_DIR/dados.sql.gz" | grep -c "^INSERT INTO \`atos\`" || true)
+CARREGADO=$(mysql --defaults-extra-file="$CNF" "$NOME" -N -B -e "SELECT COUNT(*) FROM atos")
 
 echo
 echo "Conferência:"
@@ -53,4 +75,8 @@ SELECT (SELECT COUNT(*) FROM atos) AS atos,
        (SELECT COUNT(*) FROM ato_relacoes) AS relacoes,
        (SELECT COUNT(*) FROM edicoes) AS edicoes;"
 echo
-echo "Esperado hoje: 2012 atos, 3099 classificações, 23 relações, 8 edições."
+if [ "$CARREGADO" != "$ESPERADO" ]; then
+  echo "O arquivo trazia $ESPERADO atos e o banco ficou com $CARREGADO." >&2
+  exit 1
+fi
+echo "$CARREGADO atos, os mesmos que vieram no arquivo."
