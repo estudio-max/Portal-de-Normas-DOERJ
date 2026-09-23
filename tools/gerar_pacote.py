@@ -41,6 +41,12 @@ CONTEUDO = [
     ("config/config.exemplo.php", "config/config.exemplo.php"),
     ("backend/db/instalar.sql", "_banco/instalar.sql"),
     ("outputs/dados.sql.gz", "_banco/dados.sql.gz"),
+    # O instalador vai junto. Ficou de fora até 2026-09-23, e o resultado foi
+    # uma publicação em que o servidor rodou a versão anterior do script: ele
+    # contava linhas `INSERT` para conferir a carga, o dump passara a usar
+    # INSERT estendido, e a conferência anunciou 20 atos onde havia 50.062.
+    # Script de instalação que não viaja com o que instala envelhece sozinho.
+    ("tools/instalar-banco.sh", "_banco/instalar-banco.sh"),
     ("docs/publicacao.md", "_banco/LEIA-ME-publicacao.md"),
 ]
 

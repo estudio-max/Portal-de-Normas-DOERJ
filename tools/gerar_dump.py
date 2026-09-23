@@ -78,11 +78,28 @@ def achar_mysqldump() -> str:
     sys.exit("Não achei o mysqldump. Aponte DOERJ_MYSQLDUMP para ele.")
 
 
-def contar_atos(base: list[str], banco: str) -> int:
+def ligacao() -> list[str]:
+    """Só os parâmetros de conexão, sem as opções de dump.
+
+    Separados porque o cliente `mysql` não entende `--no-create-info` e as
+    outras opções do `mysqldump`: misturar os dois fez a contagem morrer com
+    "unknown option", e o pacote saiu com o dump da véspera dentro.
+    """
+    args = [
+        "-u", os.environ.get("DOERJ_USER", "root"),
+        "-h", os.environ.get("DOERJ_HOST", "127.0.0.1"),
+        "-P", os.environ.get("DOERJ_PORT", "3306"),
+    ]
+    if os.environ.get("DOERJ_SENHA"):
+        args.append("-p" + os.environ["DOERJ_SENHA"])
+    return args
+
+
+def contar_atos(banco: str) -> int:
     """Pergunta ao banco quantos atos existem, com a mesma ligação do dump."""
     cliente = achar_mysqldump().replace("mysqldump", "mysql")
-    comando = [cliente] + base[1:] + [banco, "-N", "-B", "-e",
-                                      "SELECT COUNT(*) FROM atos"]
+    comando = [cliente] + ligacao() + [banco, "-N", "-B", "-e",
+                                       "SELECT COUNT(*) FROM atos"]
     r = subprocess.run(comando, capture_output=True)
     if r.returncode != 0:
         sys.exit("não consegui contar os atos:\n"
@@ -98,15 +115,7 @@ def main() -> int:
     o.saida.mkdir(parents=True, exist_ok=True)
 
     banco = os.environ.get("DOERJ_BANCO", "doerj")
-    comando = [
-        achar_mysqldump(),
-        "-u", os.environ.get("DOERJ_USER", "root"),
-        "-h", os.environ.get("DOERJ_HOST", "127.0.0.1"),
-        "-P", os.environ.get("DOERJ_PORT", "3306"),
-    ]
-    if os.environ.get("DOERJ_SENHA"):
-        comando.append("-p" + os.environ["DOERJ_SENHA"])
-    comando += OPCOES + [banco]
+    comando = [achar_mysqldump()] + ligacao() + OPCOES + [banco]
 
     bruto = o.saida / "dados.sql"
     with bruto.open("wb") as destino:
@@ -122,7 +131,7 @@ def main() -> int:
     # com `--extended-insert` cada comando carrega centenas, e a conta deixou de
     # bater. Declarar é mais honesto que inferir, e não depende do formato do
     # dump continuar o mesmo.
-    quantos = contar_atos(comando[:comando.index(banco)], banco)
+    quantos = contar_atos(banco)
 
     comprimido = o.saida / "dados.sql.gz"
     with bruto.open("rb") as f, gzip.open(comprimido, "wb", 9) as g:
