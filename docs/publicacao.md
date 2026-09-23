@@ -1,110 +1,155 @@
 # Publicação
 
-**Endereço:** `https://doerj.fanara.com.br`, HostGator, hospedagem particular do
-responsável técnico.
+**Endereço:** `https://doerj.fanara.com.br`, HostGator, hospedagem particular
+do responsável técnico.
+**Banco:** `fanara87_doerj`.
 
-**Estado:** o domínio existe; o portal não. No ar está uma página de espera e,
-mais importante, a **recusa de indexação**, que precisa estar de pé antes de
-qualquer conteúdo — desindexar depois é lento e incompleto.
-
-> **Não é publicação oficial.** É o mesmo caso do Mapa de CT&I: publicar em nome
-> do órgão é ato do órgão. Enquanto a SECTI-RJ não definir o ambiente
-> definitivo, este endereço é homologação, e a página deve dizer isso a quem
-> chega.
+> **Não é publicação oficial.** É o mesmo caso do Mapa de CT&I: publicar em
+> nome do órgão é ato do órgão. Enquanto a SECTI-RJ não definir o ambiente
+> definitivo, este endereço é homologação, e o rodapé diz isso a quem chega.
 
 ---
 
-## O que já está pronto para subir
+## O que sobe
 
-| Arquivo | O que faz |
+| O quê | Onde |
 |---|---|
-| `public/.htaccess` | HTTPS obrigatório, front controller, cabeçalhos de segurança e **`X-Robots-Tag: noindex`** |
-| `public/robots.txt` | pede que o buscador não rastreie |
-| `public/index.php` | página de espera, e 404 para endereço inventado |
+| `public/` inteiro | vira o document root — `.htaccess`, `index.php`, `assets/` |
+| `app/` | um nível **acima** do document root |
+| `config/config.php` | criado no servidor, a partir do exemplo |
+| `backend/db/instalar.sql` | roda no phpMyAdmin, não sobe para o site |
+| `outputs/dados.sql.gz` | idem |
 
-Conferido com o servidor embutido do PHP: `/` responde 200, `/qualquer-coisa`
-responde 404, `/robots.txt` responde 200 em `text/plain`.
-
-## Por que os dois, robots.txt e cabeçalho
-
-Fazem coisas diferentes, e só o segundo resolve o que importa.
-
-`robots.txt` pede que o buscador **não visite**. Mas uma URL que apareça num
-link de terceiro pode ser indexada sem nunca ter sido visitada — o buscador
-registra o endereço a partir do link. `X-Robots-Tag: noindex` chega junto com a
-resposta e pede que **não indexe**, que é outra coisa.
-
-O cabeçalho está no `.htaccess` e repetido no `index.php`. Do `.htaccess` ele
-cobre arquivo estático, que não passa pelo PHP. Do `index.php` ele sobrevive a
-um servidor sem `mod_headers` ou que ignore `.htaccess`.
-
-**E uma coisa que precisa estar dita:** nada disso é cadeado. Buscador que
-respeita a convenção obedece; raspador que não quiser obedecer não obedece. Não
-indexar reduz alcance, não é proteção. A proteção de verdade foi feita antes, na
-extração: CPF, documento de identidade e endereço residencial de particular não
-chegam a entrar no banco.
+**`tools/` e `docs/` não precisam ir.** São para quem mantém, não para quem
+visita, e o que não está no servidor não pode ser servido por engano.
 
 ---
 
-## Como subir
+## Roteiro
 
-Não há automação ainda, e é só um punhado de arquivos. Pelo Gerenciador de
-Arquivos do cPanel ou por FTP:
+### 1. O banco
+
+Pelo painel: criar `fanara87_doerj` com `utf8mb4` e
+`utf8mb4_unicode_ci`, e um usuário com acesso a ele.
+
+No phpMyAdmin, **nesta ordem**:
+
+1. `backend/db/instalar.sql` — cria as seis tabelas
+2. `outputs/dados.sql.gz` — 1,4 MB compactado, e o phpMyAdmin aceita `.gz`
+
+Conferir depois:
+
+```sql
+SELECT (SELECT COUNT(*) FROM atos) AS atos,
+       (SELECT COUNT(*) FROM ato_natureza) AS classificacoes,
+       (SELECT COUNT(*) FROM edicoes) AS edicoes;
+```
+
+Hoje isso dá **2.012, 3.099 e 8**. Número diferente quer dizer importação
+incompleta, e vale refazer em vez de seguir com o acervo pela metade.
+
+### 2. Os arquivos
+
+O ideal é apontar o document root para `public/`, com o resto um nível acima:
 
 ```
-public_html/
-├── .htaccess
-├── robots.txt
-└── index.php
+/home/fanara87/
+├─ doerj/
+│  ├─ app/            ← fora do alcance do navegador
+│  ├─ config/
+│  └─ public/         ← document root aponta para cá
 ```
 
-Depois, conferir no navegador:
+Quando o provedor não permitir mudar o document root, `public/` vira
+`public_html/` e `app/` e `config/` ficam ao lado, fora dele. O `.htaccess`
+nega `.md`, `.sql`, `.py`, `.jsonl` e `.csv` como segunda barreira — **a
+primeira é a estrutura de diretórios, e é nela que se confia.**
+
+### 3. A configuração
+
+```bash
+cp config/config.exemplo.php config/config.php
+```
+
+Preencher o banco, e deixar:
+
+```php
+'ambiente' => 'producao',
+'debug'    => false,
+```
+
+`debug => true` em produção mostra a mensagem do erro na tela, e mensagem de
+erro conta ao visitante detalhes do servidor que não são da conta dele.
+
+**A senha fica só ali.** Não entra no repositório — `config/config.php` está no
+`.gitignore` —, não entra em documentação e não passa por conversa.
+
+### 4. Conferir
 
 ```bash
 curl -sI https://doerj.fanara.com.br | grep -i "x-robots-tag\|strict-transport"
-curl -s  https://doerj.fanara.com.br/robots.txt
 curl -so /dev/null -w "%{http_code}\n" https://doerj.fanara.com.br/pagina-que-nao-existe
+curl -s https://doerj.fanara.com.br/busca?q=decreto | grep -c resultado__titulo
 ```
 
-O terceiro tem que responder 404. Se responder 200, o front controller está
-devolvendo a página de espera para qualquer endereço, e aí cada URL inventada
-vira uma página a mais.
+O segundo tem que dar **404**. Se der 200, o front controller está devolvendo
+página para qualquer endereço, e cada URL inventada vira uma página a mais para
+quem estiver rastreando.
 
 ---
 
-## O que falta decidir antes do portal de verdade
-
-| # | Pergunta |
-|---|---|
-| DP-10 | Onde o banco de produção mora, e quem faz backup |
-| DP-03 | O repositório continua privado |
-| DP-07 | Como a tela diz que o PDF de origem não tem valor legal |
-
-E um limite que precisa aparecer na tela, não só na documentação: **o Diário
-publica movimentação orçamentária, não o orçamento.** Um número que pareça ser o
-total e não seja, lido por órgão de controle, custa mais caro que número nenhum.
-
----
-
-## Requisitos do servidor, quando o portal existir
-
-Herdados do Mapa de CT&I, que roda na mesma hospedagem:
+## Requisitos do servidor
 
 | Item | Mínimo |
 |---|---|
 | PHP | 8.2 |
-| Extensões | `pdo_mysql`, `mbstring`, `json` |
+| Extensões | `pdo_mysql`, `mbstring` |
 | MySQL / MariaDB | 5.7 / 10.4 |
 | `mod_rewrite` | ativo |
 | `mod_headers` | ativo — sem ele o `noindex` do `.htaccess` não sai |
 
-O ideal é apontar o document root para `public/`, com o resto do repositório um
-nível acima e fora do alcance do navegador. Quando o provedor não permitir,
-`public/` vira `public_html/`. O `.htaccess` nega `.md`, `.sql`, `.py`, `.jsonl`
-e `.csv` como segunda barreira — **a primeira é a estrutura de diretórios.**
+---
 
-### Credenciais
+## Como atualizar depois
 
-Senha de banco e de FTP não entram no repositório, não entram em documentação e
-não passam por aqui. Ficam no `config/config.php`, que é criado no servidor a
-partir do exemplo e nunca versionado.
+O acervo cresce por fora: a coleta roda no GitHub Actions, a extração e a carga
+rodam na máquina de quem mantém, e o resultado vai para o servidor como dump.
+
+```bash
+python tools/doerj_download.py --inicio 2026-09-23
+python tools/doerj_extrair.py  dados/2026/09/*.pdf
+python tools/doerj_temas.py    extraido/*.jsonl
+python tools/doerj_carregar.py extraido/*.jsonl --pdf dados
+python tools/doerj_relacoes.py
+python tools/gerar_dump.py
+```
+
+Depois, no phpMyAdmin, importar `outputs/dados.sql.gz` de novo. O dump traz
+`INSERT` e não `REPLACE`, então **importar por cima de dado existente dá erro de
+chave duplicada** — para recarga completa, esvaziar as tabelas antes:
+
+```sql
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE ato_relacoes; TRUNCATE ato_ramo; TRUNCATE ato_natureza;
+TRUNCATE ato_corpo; TRUNCATE atos; TRUNCATE edicoes;
+SET FOREIGN_KEY_CHECKS = 1;
+```
+
+**Isto apaga a curadoria humana junto.** Enquanto ninguém tiver conferido
+classificação nenhuma, não custa nada. Quando começar a custar, o caminho é
+dar acesso remoto ao MySQL e rodar o `doerj_carregar.py` direto contra o
+servidor — ele preserva o que está marcado como `conferido`.
+
+---
+
+## O que ainda não existe
+
+| O quê | Por quê importa |
+|---|---|
+| Automação da carga | hoje é manual, e manual esquece |
+| Cópia de segurança do banco | o painel da HostGator faz, mas ninguém testou restaurar |
+| Coleta contínua indo ao ar | o Actions coleta; ninguém leva ao servidor sozinho |
+
+E um limite que precisa aparecer na tela, não só aqui: **o Diário publica
+movimentação orçamentária, não o orçamento.** Um número que pareça ser o total
+e não seja, lido por órgão de controle, custa mais caro que número nenhum.

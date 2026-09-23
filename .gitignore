@@ -17,7 +17,9 @@ __pycache__/
 *.pyc
 .env
 
-# Banco
+# Banco. O dump se regera em segundos a partir do JSONL, entao guardar 1,4 MB
+# de binario no historico a cada carga nao paga.
+/outputs/
 *.sql.gz
 !database/seed/*.sql
 

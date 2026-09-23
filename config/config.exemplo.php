@@ -16,7 +16,7 @@ return [
     'banco' => [
         'host'    => '127.0.0.1',
         'porta'   => 3306,
-        'nome'    => 'doerj',
+        'nome'    => 'fanara87_doerj',
         'usuario' => '',
         'senha'   => '',
     ],
