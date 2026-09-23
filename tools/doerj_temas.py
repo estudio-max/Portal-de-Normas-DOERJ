@@ -49,16 +49,22 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from vocabulario import (  # noqa: E402
-    ENTIDADE, GENERICO, POR_RAMO, RAMOS,
-    limpar, qual_ancora, qual_entidade,
+    GENERICO, NATUREZA, POR_RAMO, RAMOS,
+    limpar, quais_naturezas, qual_ancora, qual_entidade,
 )
 
 
 def classificar(texto: str, ementa: str | None = None, orgao: str | None = None,
                 unidade: str | None = None) -> dict:
-    """Devolve o recorte, a confiança, os ramos e por que entrou."""
+    """Os dois eixos: o que o ato faz, e se ele é do recorte de CT&I.
+
+    A natureza vale para **toda** matéria, e não só para as de CT&I: quem
+    procura um aditivo de contrato procura do mesmo jeito dentro ou fora do
+    recorte temático.
+    """
     alvo = limpar(" ".join(x for x in (ementa, orgao, unidade, texto) if x))
 
+    naturezas = quais_naturezas(alvo)
     ancora = qual_ancora(alvo)
     entidade = qual_entidade(alvo)
     ramos = [chave for chave, padrao in POR_RAMO.items() if padrao.search(alvo)]
@@ -73,7 +79,7 @@ def classificar(texto: str, ementa: str | None = None, orgao: str | None = None,
         confianca, porque = "baixa", "só termo genérico"
     else:
         return {"e_cti": False, "confianca": None, "ramos": [], "porque": None,
-                "entidade": None}
+                "entidade": None, "naturezas": naturezas}
 
     return {
         "e_cti": True,
@@ -81,11 +87,14 @@ def classificar(texto: str, ementa: str | None = None, orgao: str | None = None,
         "ramos": ramos,
         "porque": porque,
         "entidade": entidade,
+        "naturezas": naturezas,
     }
 
 
 def processar(caminhos: list[Path], amostra: int) -> int:
     por_confianca: Counter = Counter()
+    por_natureza: Counter = Counter()
+    sem_natureza = 0
     por_ramo: Counter = Counter()
     por_entidade: Counter = Counter()
     exemplos: dict[str, list] = {}
@@ -105,10 +114,15 @@ def processar(caminhos: list[Path], amostra: int) -> int:
             r["ramos"] = res["ramos"]
             r["porque_cti"] = res["porque"]
             r["entidade_sistema"] = res["entidade"]
+            r["naturezas"] = res["naturezas"]
             # Nada aqui foi conferido por pessoa, e a tela tem que dizer isso.
             r["temas_origem"] = "automatico"
 
             total += 1
+            for n in res["naturezas"]:
+                por_natureza[n] += 1
+            if not res["naturezas"]:
+                sem_natureza += 1
             if res["e_cti"]:
                 por_confianca[res["confianca"]] += 1
                 if res["entidade"]:
@@ -124,7 +138,15 @@ def processar(caminhos: list[Path], amostra: int) -> int:
     de_cti = sum(por_confianca.values())
     print(f"{total} matérias, {de_cti} no recorte de CT&I ({de_cti * 100 // max(total,1)}%)\n")
 
-    print("  por confiança")
+    print("  natureza do ato, em todas as matérias")
+    maior = max(por_natureza.values(), default=1)
+    for chave, n in NATUREZA.items():
+        q = por_natureza.get(chave, 0)
+        print(f"    {n['nome']:26} {q:5}  {'#' * min(34, q * 34 // maior)}")
+    print(f"    {'(sem categoria)':26} {sem_natureza:5}")
+
+    print()
+    print("  por confiança, só no recorte de CT&I")
     for nivel in ("alta", "media", "baixa"):
         print(f"    {nivel:6} {por_confianca.get(nivel, 0):4}")
 

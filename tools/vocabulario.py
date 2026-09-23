@@ -181,6 +181,142 @@ RAMOS = {
 }
 
 # ---------------------------------------------------------------------------
+# NATUREZA DO ATO — o segundo eixo, e o que estrutura a navegação.
+#
+# São oito categorias derivadas dos rótulos que o **próprio Diário** usa para
+# separar as suas matérias, e medidas em 2.012 delas antes de virarem código.
+# Não classificam assunto: classificam **o que o ato faz**.
+#
+# Valem para toda matéria, e não só para as de CT&I. O portal mostra tudo, e
+# quem procura um aditivo de contrato procura do mesmo jeito dentro ou fora do
+# recorte temático.
+#
+# Uma matéria pode ter mais de uma, e isso é fiel ao objeto: um edital de pregão
+# para equipar laboratório é compra **e** contrato.
+# ---------------------------------------------------------------------------
+
+NATUREZA = {
+    "contratos": {
+        "nome": "Contratos e convênios",
+        "termos": [
+            r"extrato de (?:instrumento|termo)", r"instrumento contratual",
+            r"termo aditivo", r"\bcontrato n", r"convenio", r"termo de cooperacao",
+            r"termo de fomento", r"termo de colaboracao", r"vigencia",
+            r"faturar por empenho", r"valor (?:total|global) d", r"contratada?\b",
+            r"prorroga(?:cao|r).{0,40}contrato", r"rescis(?:ao|ao contratual)",
+        ],
+    },
+    "academico": {
+        "nome": "Ensino e vida acadêmica",
+        "termos": [
+            r"matricula(?!\s*funcional)", r"vestibular", r"calendario (?:academico|escolar)",
+            r"colacao de grau", r"curso (?:tecnico|de graduacao|superior|de pos)",
+            r"diploma", r"discente", r"corpo docente", r"concurso publico",
+            r"processo seletivo", r"prova (?:objetiva|discursiva)", r"gabarito",
+            r"isencao de taxa", r"classificacao final", r"banca examinadora",
+            r"monitoria", r"estagio (?:obrigatorio|curricular|supervisionado)",
+        ],
+    },
+    "compras": {
+        "nome": "Compras e licitações",
+        "termos": [
+            r"pregao (?:eletronico|presencial)", r"licitacao", r"dispensa de licitacao",
+            r"inexigibilidade", r"homologa(?:cao|r|do)", r"adjudica",
+            r"tomada de precos", r"concorrencia publica", r"credenciamento",
+            r"registro de precos", r"ata de registro", r"menor preco",
+            r"aviso de (?:licitacao|pregao|suspensao)", r"edital de pregao",
+        ],
+    },
+    "pessoal": {
+        "nome": "Pessoal",
+        "termos": [
+            r"\bnomear\b", r"\bexonerar\b", r"\bnomeacao\b", r"\bexoneracao\b",
+            r"aposenta(?:r|doria|do|da)", r"licenca premio", r"licenca especial",
+            r"matricula funcional", r"cargo em comissao", r"tomar posse|\bposse\b",
+            r"cessao de servidor", r"remocao", r"lotacao", r"redistribuicao",
+            r"contrato temporario", r"admissao", r"progressao funcional",
+            r"averbacao de tempo", r"pensao", r"substituicao.{0,30}(titular|impedimento)",
+        ],
+    },
+    "governanca": {
+        "nome": "Governança e normas",
+        "termos": [
+            r"fica(?:m)? institu", r"\binstituir\b", r"regimento interno",
+            r"regulamenta(?:r|cao)", r"aprova o regulamento", r"plano estadual",
+            r"politica estadual", r"diretrizes", r"estrutura organizacional",
+            r"competencias? d[aeo]", r"delega(?:cao|r) de competencia",
+            r"conselho estadual", r"camara tecnica", r"fica(?:m)? aprovad",
+        ],
+    },
+    "comissoes": {
+        "nome": "Comissões e fiscalização",
+        "termos": [
+            r"comissao de (?:fiscaliza|acompanh|gestao|avalia|sindic|licita|etica)",
+            r"gestor do contrato", r"fiscal (?:do contrato|setorial|tecnico)",
+            r"grupo de trabalho", r"comite gestor", r"designar.{0,60}compor",
+            r"processo administrativo disciplinar", r"sindicancia",
+        ],
+    },
+    "orcamento": {
+        "nome": "Orçamento e finanças",
+        "termos": [
+            r"credito (?:suplementar|especial|extraordinario)", r"dotacao orcamentaria",
+            r"programa de trabalho", r"natureza de despesa", r"fonte de recursos",
+            r"ordenador de despesas", r"descentralizacao de credito",
+            r"nota de empenho", r"anulacao de empenho", r"restos a pagar",
+            r"abre credito", r"suplementa",
+        ],
+    },
+    "fomento": {
+        "nome": "Fomento e bolsas",
+        "termos": [
+            r"\bbolsa", r"auxilio a pesquisa", r"auxilio instalacao",
+            r"chamada publica", r"edital de (?:apoio|fomento|selecao)",
+            r"subvencao", r"concessao de (?:bolsa|auxilio)", r"apoio financeiro",
+            r"financiamento a pesquisa", r"projeto (?:contemplado|aprovado)",
+        ],
+    },
+
+    # As três abaixo não estavam na proposta de oito. Foram acrescentadas depois
+    # de medir o que sobrava sem categoria: eram 583 matérias, 29% do corpus, e
+    # dentro delas havia três grupos com nome próprio. A maior, sozinha, tem 356.
+    #
+    # Deixá-las fora não tornaria o Diário mais simples: tornaria a navegação
+    # mentirosa, porque um terço do acervo cairia num "outros" que ninguém abre.
+    "despachos": {
+        "nome": "Despachos em processos",
+        "termos": [
+            # **"processo nº" ficou de fora.** Ele aparece em 91% das matérias,
+            # porque o SEI numera tudo — e com ele aqui esta categoria engolia
+            # 1.298 das 2.012, dois terços do acervo. Número de processo diz
+            # onde o ato tramita, não que ele seja um despacho.
+            r"despachos? d[aeo]\b", r"\bdefiro\b", r"\bindefiro\b", r"\bautorizo\b",
+            r"\bhomologo\b", r"\baprovo\b", r"\bratifico\b",
+            r"arquive-se", r"cientifique-se", r"publique-se", r"restitua-se",
+            r"na forma do parecer", r"acolho o parecer", r"de acordo com o parecer",
+        ],
+    },
+    "contencioso": {
+        "nome": "Julgamento e contencioso",
+        "termos": [
+            r"conselho de contribuintes", r"recurso (?:voluntario|de oficio|hierarquico)",
+            r"\bacordao\b", r"\brelator\b", r"(?:negar|dar) provimento",
+            r"julgar (?:procedente|improcedente)", r"auto de infracao",
+            r"defesa administrativa", r"impugnacao", r"junta de revisao",
+            r"decisao monocratica", r"camara de julgamento",
+        ],
+    },
+    "retificacoes": {
+        "nome": "Retificações e republicações",
+        "termos": [
+            r"\bretificacao\b", r"\berrata\b", r"republicacao por incorrecao",
+            r"onde se le", r"leia-se", r"tornar sem efeito", r"torna sem efeito",
+            r"\bapostila\b", r"fica retificad", r"ratifica(?:cao|r) o (?:ato|despacho)",
+        ],
+    },
+}
+
+# ---------------------------------------------------------------------------
 # Termos genéricos: sozinhos não bastam. "Tecnologia" aparece em contrato de
 # impressora, e "inovação" em jargão de atribuição de cargo — foi medido: cinco
 # matérias entraram por "melhoria ou inovação em seus processos institucionais".
@@ -225,6 +361,7 @@ ENTIDADE = _junta(ENTIDADES.values())
 GENERICO = _junta(GENERICOS)
 RUIDO_RE = _junta(RUIDO)
 POR_RAMO = {k: _junta(v["termos"]) for k, v in RAMOS.items()}
+POR_NATUREZA = {k: _junta(v["termos"]) for k, v in NATUREZA.items()}
 
 
 def normalizar(texto: str) -> str:
@@ -249,6 +386,11 @@ def qual_entidade(alvo: str) -> str | None:
         if re.search(padrao, alvo, re.I):
             return nome
     return None
+
+
+def quais_naturezas(alvo: str) -> list[str]:
+    """O que o ato faz. Pode ser mais de uma coisa, e costuma ser."""
+    return [chave for chave, padrao in POR_NATUREZA.items() if padrao.search(alvo)]
 
 
 def autoteste() -> int:
@@ -312,6 +454,48 @@ def autoteste() -> int:
     assert len(RAMOS) == 3, "os ramos são as três subsecretarias"
     for chave, ramo in RAMOS.items():
         assert ramo["fonte"], f"{chave} sem fonte no regimento"
+
+    # ---------------------------------------------------- natureza do ato
+    # Oito aprovadas, mais três que a medição do que sobrava exigiu.
+    assert len(NATUREZA) == 11, len(NATUREZA)
+
+    def nat(t):
+        return quais_naturezas(limpar(t))
+
+    assert "pessoal" in nat("NOMEAR FULANO DE TAL para exercer o cargo em comissão")
+    assert "pessoal" in nat("EXONERAR, a pedido, a servidora de matrícula funcional")
+    assert "pessoal" in nat("concede 3 meses de licença prêmio ao servidor")
+    assert "contratos" in nat("EXTRATO DE TERMO ADITIVO ao Contrato nº 46/2020")
+    assert "compras" in nat("AVISO DE LICITAÇÃO. Pregão eletrônico nº 12/2026")
+    assert "orcamento" in nat("ABRE CRÉDITO SUPLEMENTAR no valor global de")
+    assert "fomento" in nat("concessão de bolsa de iniciação científica")
+    assert "academico" in nat("resultado final do processo seletivo para o curso técnico")
+    assert "comissoes" in nat("designar os servidores para compor a comissão de fiscalização")
+    assert "governanca" in nat("Fica instituído o Comitê Gestor, e aprovado o regimento interno")
+
+    # "matrícula funcional" é de pessoal; "matrícula" de aluno é acadêmica. A
+    # distinção está no padrão, e sem ela toda nomeação viraria vida acadêmica.
+    assert "academico" not in nat("servidor de matrícula funcional nº 123")
+    assert "academico" in nat("abertura do período de matrícula dos alunos")
+
+    # Uma matéria pode fazer duas coisas, e isso é fiel ao objeto.
+    duplo = nat("AVISO DE LICITAÇÃO pregão eletrônico para contratação, "
+                "Contrato nº 9/2026, vigência de 12 meses")
+    assert {"compras", "contratos"} <= set(duplo), duplo
+
+    # --- as três acrescentadas depois de medir o que sobrava ---
+    assert "retificacoes" in nat("RETIFICAÇÃO. No D.O. de 21/09/2026, página 30, "
+                                 "onde se lê 'Fulano', leia-se 'Sicrano'")
+    assert "retificacoes" in nat("TORNAR SEM EFEITO o Ato de 23 de março de 2026")
+    assert "despachos" in nat("DESPACHO DO PRESIDENTE. Processo nº SEI-260002/005670/2026. "
+                              "AUTORIZO a contratação na forma do parecer")
+    assert "contencioso" in nat("CONSELHO DE CONTRIBUINTES. Recurso voluntário desprovido. "
+                                "Acórdão. Relator:")
+    assert "contencioso" in nat("AUTO DE INFRAÇÃO nº SUPPIBEAI/00133441")
+
+    # Despacho que autoriza contrato é as duas coisas, e a tela mostra as duas.
+    r = nat("DESPACHO DO SECRETÁRIO. AUTORIZO a celebração do Contrato nº 9/2026")
+    assert {"despachos", "contratos"} <= set(r), r
 
     print("autoteste vocabulario: tudo certo")
     return 0

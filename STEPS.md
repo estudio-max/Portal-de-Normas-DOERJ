@@ -419,7 +419,7 @@ trocas que interessam à lente 2, e não para todas.
 | DP-16 | O ID funcional deve ser mascarado? | é como o Estado identifica servidor em ato oficial, e aparece em 15% das matérias | Médio |
 | DP-17 | Guardar no banco a contagem de documentos ocultados por matéria | serve de trilha de auditoria da LGPD | Baixo |
 | DP-12 | Até que ano recompor o acervo, para a lente 2 | 250 edições por ano; 2010 foi testado e funciona. Agora é conta de texto, não de 20 GB de PDF | Alto — decide o esforço de coleta |
-| DP-13 | Quais são as categorias | proposta medida em `docs/proposta-categorias.md`: dois eixos, natureza do ato e onde acontece | **Alto — define a navegação** |
+| ~~DP-13~~ | ~~Quais são as categorias~~ | **onze**, em dois eixos. Oito aprovadas, três acrescentadas depois de medir o que sobrava | resolvida em 2026-09-23 |
 | DP-14 | A classificação temática precisa de revisão humana antes de publicar? | (a) sim, fila de curadoria; (b) não, com marca de automático | Médio |
 | DP-06 | Qual a licença do repositório | — | Baixo |
 | DP-07 | Como o portal deixa claro que o PDF não tem valor legal | (a) aviso fixo na página de cada ato; (b) só na página "sobre" | **Alto — é o risco jurídico do projeto** |

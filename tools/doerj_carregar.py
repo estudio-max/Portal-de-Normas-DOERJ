@@ -177,6 +177,9 @@ def carregar(caminho: Path, pasta_pdf: Path | None) -> tuple[int, int, int]:
                     ano_de(r), r.get("data_ato"), r["data_pub"],
                     r.get("orgao"), apelido(r.get("orgao")),
                     r.get("unidade"), apelido(r.get("unidade")),
+                    1 if r.get("e_cti") else 0, r.get("confianca"),
+                    (r.get("porque_cti") or "")[:80] or None,
+                    r.get("entidade_sistema"),
                     r.get("ementa"), 1 if r.get("ementa_inferida") else 0,
                     r.get("cabecalho"), 1 if r.get("reconhecido") else 0,
                     r.get("atos_no_texto") or 0,
@@ -188,6 +191,7 @@ def carregar(caminho: Path, pasta_pdf: Path | None) -> tuple[int, int, int]:
                         "UPDATE atos SET edicao_id=%s, id_ioerj=%s, tipo=%s, numero=%s,"
                         " ano=%s, data_ato=%s, data_pub=%s, orgao=%s, orgao_slug=%s,"
                         " unidade=%s, unidade_slug=%s,"
+                        " e_cti=%s, confianca=%s, porque_cti=%s, entidade_sistema=%s,"
                         " ementa=%s, ementa_inferida=%s, cabecalho=%s, reconhecido=%s,"
                         " atos_no_texto=%s, pagina=%s WHERE id=%s",
                         campos + (ident,),
@@ -197,10 +201,12 @@ def carregar(caminho: Path, pasta_pdf: Path | None) -> tuple[int, int, int]:
                     c.execute(
                         "INSERT INTO atos (edicao_id, id_ioerj, tipo, numero, ano,"
                         " data_ato, data_pub, orgao, orgao_slug, unidade,"
-                        " unidade_slug, ementa,"
+                        " unidade_slug, e_cti, confianca, porque_cti,"
+                        " entidade_sistema, ementa,"
                         " ementa_inferida, cabecalho, reconhecido, atos_no_texto,"
                         " pagina, id)"
-                        " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                        " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,"
+                        "%s,%s,%s,%s,%s,%s,%s)",
                         campos + (ident,),
                     )
                     novos += 1
@@ -211,6 +217,24 @@ def carregar(caminho: Path, pasta_pdf: Path | None) -> tuple[int, int, int]:
                     "REPLACE INTO ato_corpo (ato_id, texto) VALUES (%s, %s)",
                     (ident, r.get("texto") or ""),
                 )
+
+                # A classificação é refeita a cada carga, então as linhas
+                # automáticas saem e voltam. As conferidas por pessoa ficam:
+                # recarregar o JSONL não pode apagar curadoria.
+                for tabela, coluna, valores in (
+                    ("ato_natureza", "natureza", r.get("naturezas") or []),
+                    ("ato_ramo", "ramo", r.get("ramos") or []),
+                ):
+                    c.execute(
+                        f"DELETE FROM {tabela} WHERE ato_id=%s AND origem='automatico'",
+                        (ident,),
+                    )
+                    for valor in valores:
+                        c.execute(
+                            f"INSERT IGNORE INTO {tabela} (ato_id, {coluna})"
+                            " VALUES (%s, %s)",
+                            (ident, valor),
+                        )
 
             if edicao_id:
                 c.execute(
