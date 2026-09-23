@@ -598,6 +598,50 @@ uma consulta pública pudesse deixar vazar.
 "Lacuna" aqui é o que o Diário não mostra, e não o que a pasta não fez: muita
 coisa acontece sem virar publicação oficial. A tela diz isso ao lado do número.
 
+### Publicado em 2026-09-23, trancado até a senha do cPanel
+
+Os três painéis estão no servidor e respondem 403 para todos — inclusive para a
+equipe — até o João criar usuário e senha na "Privacidade do diretório" do
+cPanel. O passo a passo está em `docs/publicacao.md`. Conferido em produção: com
+usuário e senha forjados pelo visitante, continua 403.
+
+**Prazos e compromissos** saiu com 1.430 instrumentos lidos de 722 extratos.
+Na data da publicação: 47 vencem em até 90 dias, 491 em até um ano, 20 venceram
+nos últimos seis meses. Duas regras vieram de olhar a tabela, e não do desenho:
+
+- **Compromisso da SECTI é aquele em que ela ou uma vinculada é parte.** Pelo
+  texto, entravam contratos da Polícia Militar e estágios da Procuradoria que só
+  citavam uma vinculada — 144 de 1.293.
+- **No termo de estágio conta quem concede.** A UERJ assina como escola do
+  estudante no estágio da Fazenda, e aparecia como compromisso dela.
+
+As cores do gráfico passaram pelo validador da skill de visualização. A primeira
+escolha, com os tokens de alerta que o portal já tinha, reprovou: o vermelho e o
+âmbar escuros ficavam a ΔE 7,3 um do outro, e 1,3 para daltônicos —
+justamente as duas faixas que precisam se distinguir.
+
+**O limite que importa:** o acervo tem 2026 inteiro e está recebendo 2025.
+Compromisso cujo extrato saiu antes disso não aparece, e é exatamente o que a
+gestão atual pode não saber. Cada ano coletado aumenta o que o painel enxerga.
+
+**Missão 10** aguarda o documento.
+
+### FATEC, FUNCIERJ e "Várias vinculadas"
+
+O art. 51 da minuta lista sete vinculadas, e o portal tinha cinco. FATEC e
+FUNCIERJ entraram, mas ficaram com uma matéria cada: quase toda menção a elas
+está nos decretos de crédito do governador, que trazem a tabela de todas as
+unidades da SECTI.
+
+Esses decretos iam para a primeira vinculada da lista. Eram 444, 425 contadas
+como da FAPERJ — 70% do espaço dela. Agora matéria que cita três ou mais
+vinculadas, e não foi publicada por nenhuma, vai para "Várias vinculadas". A
+FAPERJ foi de 612 para 176. Quem publica continua mandando: edital da FAPERJ
+que lista UERJ e UENF é da FAPERJ.
+
+Esses decretos são, linha a linha, o orçamento de cada vinculada — o FATEC com
+R$ 280 milhões numa delas. Ler essas tabelas é a Fase 8.
+
 ## Dúvidas e decisões pendentes
 
 | # | Pergunta | Alternativas | Impacto |
