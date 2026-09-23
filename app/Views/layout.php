@@ -49,13 +49,28 @@ $atual = static fn (string $r): string => str_starts_with($caminho, $r)
       <span>Diário Oficial do Estado do Rio de Janeiro</span>
     </a>
   </div>
+<?php if (!empty($paineis)): ?>
+  <nav class="cabecalho__nav" aria-label="Painéis da área interna">
+<?php foreach ($paineis as $chave => $nome): ?>
+    <a href="/interno/?p=<?= e($chave) ?>"<?= ($painel ?? '') === $chave ? ' aria-current="page"' : '' ?>><?= e($nome) ?></a>
+<?php endforeach; ?>
+    <a href="/">Portal público</a>
+  </nav>
+<?php else: ?>
   <nav class="cabecalho__nav" aria-label="Navegação principal">
     <a href="/"<?= $caminho === '/' ? ' aria-current="page"' : '' ?>>Início</a>
     <a href="/busca"<?= $atual('/busca') ?>>Buscar</a>
     <a href="/busca?cti=1"<?= '' ?>>Ciência, tecnologia e inovação</a>
     <a href="/sobre"<?= $atual('/sobre') ?>>Sobre</a>
   </nav>
+<?php endif; ?>
 </header>
+<?php if (!empty($paineis)): ?>
+<p class="faixa-interna">
+  Área interna da SECTI. O conteúdo desta página não é público — não o encaminhe
+  nem imprima para fora da equipe.
+</p>
+<?php endif; ?>
 
 <main class="pagina<?= !empty($larga) ? ' pagina--larga' : '' ?>" id="conteudo">
 <?= $conteudo ?>

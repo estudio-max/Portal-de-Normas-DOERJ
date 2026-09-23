@@ -39,6 +39,11 @@ CONTEUDO = [
     ("app", "app"),
     ("public", "public"),
     ("config/config.exemplo.php", "config/config.exemplo.php"),
+    # O conteúdo da área interna. Não entra no git (DP-03), mas o servidor
+    # precisa dele, e o pacote viaja por SCP e fica fora da pasta pública.
+    # A proteção da pasta `interno/` NÃO vai no pacote: é o cPanel que
+    # escreve aquele `.htaccess`, e um pacote que levasse um apagaria a senha.
+    ("config/interno.php", "config/interno.php"),
     ("backend/db/instalar.sql", "_banco/instalar.sql"),
     ("outputs/dados.sql.gz", "_banco/dados.sql.gz"),
     # O instalador vai junto. Ficou de fora até 2026-09-23, e o resultado foi
@@ -71,6 +76,9 @@ def montar() -> int:
     if faltando:
         print("Faltou gerar antes:", file=sys.stderr)
         for f in faltando:
+            if f.endswith("interno.php"):
+                print(f"  {f} — copie de config/interno.exemplo.php e preencha", file=sys.stderr)
+                continue
             ferramenta = ("tools/gerar_dump.py" if f.endswith(".gz")
                           else "tools/gerar_instalador.py")
             print(f"  {f} — rode {ferramenta}", file=sys.stderr)

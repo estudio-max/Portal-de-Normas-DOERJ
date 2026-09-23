@@ -11,6 +11,10 @@
 # e o modelo ao lado (config.exemplo.php) e o que se versiona no lugar.
 /config/config.php
 
+# O planejamento interno da SECTI (100 Dias, competencias do regimento) para a
+# area restrita. Se o repositorio for aberto (DP-03), ele nao pode ir junto.
+/config/interno.php
+
 # Ambiente
 .venv/
 __pycache__/

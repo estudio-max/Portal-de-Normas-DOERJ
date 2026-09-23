@@ -53,7 +53,7 @@ fi
 # chave estrangeira: filha primeiro.
 echo "Limpando as tabelas..."
 mysql --defaults-extra-file="$CNF" "$NOME" -e \
-  "DROP TABLE IF EXISTS ato_relacoes, ato_natureza, ato_ramo, ato_corpo, atos, edicoes;"
+  "DROP TABLE IF EXISTS ato_prazo, ato_relacoes, ato_natureza, ato_ramo, ato_corpo, atos, edicoes;"
 
 echo "Criando as tabelas..."
 mysql --defaults-extra-file="$CNF" "$NOME" < "$BANCO_DIR/instalar.sql"

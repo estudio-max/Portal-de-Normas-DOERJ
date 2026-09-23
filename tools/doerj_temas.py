@@ -50,7 +50,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from vocabulario import (  # noqa: E402
     GENERICO, NATUREZA, POR_RAMO, RAMOS,
-    limpar, quais_naturezas, qual_ancora, qual_entidade,
+    dona_da_materia, limpar, quais_naturezas, qual_ancora,
 )
 
 
@@ -66,11 +66,13 @@ def classificar(texto: str, ementa: str | None = None, orgao: str | None = None,
 
     naturezas = quais_naturezas(alvo)
     ancora = qual_ancora(alvo)
-    entidade = qual_entidade(alvo)
+    entidade = dona_da_materia(alvo, limpar(" ".join(x for x in (orgao, unidade) if x)))
     ramos = [chave for chave, padrao in POR_RAMO.items() if padrao.search(alvo)]
 
     if ancora:
         confianca, porque = "alta", f"cita {ancora}"
+    elif entidade == "varias":
+        confianca, porque = "alta", "cita três ou mais vinculadas"
     elif entidade:
         confianca, porque = "alta", f"entidade do sistema: {entidade}"
     elif ramos:
@@ -263,6 +265,28 @@ def autoteste() -> int:
         "tração, por dia 60025034 taxa de incubadora por hora R$ 8,43",
     ):
         assert not c(erro)["e_cti"], erro
+
+    # --- os dois fundos do art. 51 do regimento, que faltavam ---
+    #
+    # A ordem importa: o FATEC é gerido pela FAPERJ, e matéria da FAPERJ que
+    # cita o fundo tem de continuar sendo da FAPERJ.
+    assert c("40610 FATEC 323.818.473 323.818.473")["entidade"] == "fatec"
+    assert c("Fundo para as Ciências do Estado do Rio de Janeiro - FUNCIERJ,"
+             " extrato de termo")["entidade"] == "funcierj"
+    assert c("A FAPERJ, gestora do Fundo de Apoio ao Desenvolvimento"
+             " Tecnológico - FATEC, torna público")["entidade"] == "faperj"
+
+    # --- três ou mais vinculadas não são de nenhuma delas ---
+    #
+    # O decreto de crédito lista todas as unidades da SECTI; a primeira da lista
+    # levava. Mas quem publica manda: edital da FAPERJ que cita outras continua
+    # dela.
+    tabela = ("40410 FAPERJ 763.824.100 40430 UERJ 2.219.917.607 40450 UENF"
+              " 447.059.248 40460 CECIERJ 119.764.360 40610 FATEC 280.892.454")
+    assert c(tabela, orgao="ATOS DO PODER EXECUTIVO")["entidade"] == "varias"
+    assert c("Programa de apoio a pesquisadores da UERJ, da UENF e do CECIERJ",
+             orgao="Secretaria de Estado de Ciência, Tecnologia e Inovação",
+             unidade="FUNDAÇÃO CARLOS CHAGAS FILHO DE AMPARO À PESQUISA")["entidade"] == "faperj"
 
     # --- e o que precisa continuar entrando ---
     #

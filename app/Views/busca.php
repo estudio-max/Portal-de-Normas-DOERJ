@@ -121,7 +121,7 @@ $icone_documento = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" 
       <select id="f-ano" name="ano" data-aplica>
         <option value="">Todos</option>
 <?php foreach (Acervo::anos() as $a): ?>
-        <option value="<?= $a ?>"<?= $filtros['ano'] === (string) $a ? ' selected' : '' ?>><?= $a ?></option>
+        <option value="<?= $a['ano'] ?>"<?= $filtros['ano'] === (string) $a['ano'] ? ' selected' : '' ?>><?= e(Acervo::rotuloDoAno($a)) ?></option>
 <?php endforeach; ?>
       </select>
     </p>

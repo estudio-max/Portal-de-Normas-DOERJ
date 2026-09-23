@@ -36,6 +36,12 @@
   --alerta: #8a4b12;
   --perigo: #9c2c1e;
 
+  /* As quatro faixas de urgência dos prazos, na área interna. */
+  --prazo-vencido: #7b8888;
+  --prazo-alerta: #b3261e;
+  --prazo-ano: #b58000;
+  --prazo-depois: #1f6fb2;
+
   --raio: 6px;
   --raio-cartao: 18px;
   --sombra-cartao: 0 14px 34px rgba(11, 31, 42, 0.10), 0 2px 6px rgba(11, 31, 42, 0.05);
@@ -731,4 +737,91 @@ a.selo:hover { border-color: var(--acento); color: var(--acento); }
   .cartoes { display: block; }
   .tabela-rolante { display: none; }
   .etiquetas__limpar { margin-left: 0; }
+}
+
+/* ------------------------------------------- área interna
+   Os prazos e os painéis do 100 Dias e do regimento. As quatro cores de
+   urgência passaram pelo validador de paleta da skill de visualização: vizinhas
+   a ΔE 19 (visão comum) e 13 (daltonismo), todas acima de 3:1 contra o fundo.
+   O cinza de "já venceu" lê como cinza de propósito: é contexto, não alerta.
+   E a cor nunca vem sozinha — há sempre o rótulo ao lado. */
+
+.faixa-interna {
+  margin: 0;
+  padding: .45rem 1.25rem;
+  background: var(--ressalva-fundo);
+  border-bottom: 1px solid var(--ressalva-borda);
+  color: var(--ressalva-tinta);
+  font-size: .8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.filtro-interno { display: flex; align-items: end; gap: .75rem; margin-bottom: 1rem; }
+.filtro-interno .campo { min-width: min(24rem, 100%); }
+
+.numeros-prazo { display: flex; flex-wrap: wrap; gap: .75rem; margin: 0 0 1rem; }
+.numero-prazo {
+  flex: 1 1 12rem;
+  margin: 0;
+  padding: .9rem 1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+}
+.numero-prazo strong { display: block; font-size: 2rem; line-height: 1.1; }
+.numero-prazo span { font-size: .85rem; color: var(--tinta-suave); }
+.numero-prazo--alerta { border-color: var(--prazo-alerta); }
+.numero-prazo--alerta strong { color: var(--prazo-alerta); }
+
+.marca-faixa {
+  display: inline-block;
+  width: .7rem;
+  height: .7rem;
+  margin-right: .4rem;
+  border-radius: 3px;
+  vertical-align: baseline;
+}
+.marca-faixa--vencido { background: var(--prazo-vencido); }
+.marca-faixa--alerta { background: var(--prazo-alerta); }
+.marca-faixa--ano { background: var(--prazo-ano); }
+.marca-faixa--depois { background: var(--prazo-depois); }
+
+.grafico-prazos { margin: 0 0 1rem; padding: 1rem; }
+.grafico-prazos figcaption { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; }
+.grafico-prazos figcaption .apoio { font-size: .78rem; }
+.legenda { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; list-style: none; margin: .6rem 0 .4rem; padding: 0; font-size: .8rem; color: var(--tinta-suave); }
+.grafico { display: block; width: 100%; height: auto; }
+.grafico .grade { stroke: var(--borda); stroke-width: 1; }
+.grafico .eixo { fill: var(--tinta-suave); font-size: 11px; font-family: inherit; }
+.grafico .eixo--ano { font-weight: 700; }
+.grafico .alvo { fill: transparent; }
+.grafico .mes:hover .alvo { fill: var(--superficie-2); }
+.grafico .seg--vencido { fill: var(--prazo-vencido); }
+.grafico .seg--alerta { fill: var(--prazo-alerta); }
+.grafico .seg--ano { fill: var(--prazo-ano); }
+.grafico .seg--depois { fill: var(--prazo-depois); }
+.grafico .hoje { stroke: var(--tinta); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.grafico .hoje__rotulo { fill: var(--tinta); font-size: 11px; font-weight: 700; font-family: inherit; }
+
+.faixa-prazos { margin: 0 0 1rem; }
+.faixa-prazos h2 { margin: 0; padding: .9rem 1rem .6rem; font-size: 1.05rem; }
+.tabela-prazos .col-data { width: 9rem; white-space: normal; }
+.prazo-falta, .prazo-como { display: block; font-size: .75rem; margin-top: .15rem; }
+.col-valor { width: 10rem; font-size: .78rem; color: var(--tinta-suave); }
+.tabela-prazos .col-acao { width: 9.5rem; }
+.tabela-prazos .col-acao .prazo-como { white-space: normal; text-align: right; }
+
+.tabela-itens .col-numero { width: 11rem; text-align: right; }
+.tabela-itens .col-numero strong { font-size: 1rem; }
+.tabela-itens tr.escolhido td { background: var(--acento-claro); }
+
+.lista-materias { list-style: none; margin: 0; padding: 0 1rem 1rem; }
+.lista-materias li { padding: .7rem 0; border-top: 1px solid var(--borda); }
+.lista-materias a { font-weight: 700; }
+.lista-materias .apoio { font-size: .78rem; margin-left: .4rem; }
+
+@media (max-width: 48rem) {
+  .grafico-prazos { overflow-x: auto; }
+  .grafico { min-width: 40rem; }
 }

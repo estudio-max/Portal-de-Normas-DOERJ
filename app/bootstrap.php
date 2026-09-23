@@ -46,6 +46,42 @@ function e(?string $texto): string
     return htmlspecialchars($texto ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+/**
+ * Os cabeçalhos de segurança de toda resposta em HTML.
+ *
+ * Numa função porque há duas portas de entrada — o portal público e a área
+ * interna — e cabeçalho de segurança copiado em dois lugares é cabeçalho que
+ * um dia difere do outro sem ninguém ver.
+ */
+function cabecalhos_de_seguranca(): void
+{
+    /*
+     * Os cabeçalhos repetem o que o `.htaccess` já manda, e a repetição é
+     * deliberada: de lá eles cobrem arquivo estático, que não passa pelo PHP;
+     * daqui eles sobrevivem a um servidor sem `mod_headers` ou que ignore
+     * `.htaccess`. Como os dois usam `set`, a resposta sai com um valor só.
+     */
+    header('X-Robots-Tag: noindex, nofollow, noarchive, nosnippet');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('Referrer-Policy: same-origin');
+    /*
+     * Nada de terceiro é carregado: a fonte, o CSS e o script são servidos daqui.
+     * Sem `font-src` de propósito — ele cai em `default-src 'self'`, e fonte de CDN
+     * entregaria o endereço de rede de cada visitante a mais alguém.
+     *
+     * `script-src 'self'` e não mais `'none'`: há um script, e ele só faz o filtro
+     * se aplicar ao ser escolhido, como no portal da UFF. Continua proibido script
+     * embutido na página e script de fora. Sem ele, o botão Buscar faz o mesmo.
+     */
+    header(
+        "Content-Security-Policy: default-src 'self'; img-src 'self' data:; "
+        . "style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'; "
+        . "frame-ancestors 'self'"
+    );
+    header('Content-Type: text/html; charset=utf-8');
+}
+
 /** 2026-09-22 vira 22/09/2026. */
 function data_br(?string $iso): string
 {

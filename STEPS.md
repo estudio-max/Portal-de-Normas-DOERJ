@@ -545,13 +545,66 @@ dentro de um edital, e "grupos de pesquisa" na composição de um conselho.
 Os seis erros viraram teste em `doerj_temas.py --autoteste`, cada um com o número
 de matérias que trazia. Auditoria que não vira teste volta.
 
+## Fase 10 — a área interna. Aberta em 2026-09-23
+
+O João decidiu que vale ter uma área restrita. O que é interno da SECTI — o
+Planejamento 100 Dias, a Missão 10 (igualdade racial e de gênero), as lacunas
+entre o que o regimento manda e o que o Diário mostra — não pode ir para a tela
+pública, e sem essa área ficaria fora do portal.
+
+### Como ela é protegida
+
+**Pela senha do próprio servidor, e não por login feito aqui.** A pasta
+`public/interno/` é protegida pela "Privacidade de diretório" do cPanel, que é
+autenticação do Apache. O usuário e a senha o João cria no cPanel; nenhum dos
+dois passa pelo código nem pelo repositório.
+
+**E um segundo cadeado no PHP, que falha fechado.** A página interna só mostra
+alguma coisa quando o servidor diz quem entrou (`REMOTE_USER`). Se a proteção do
+cPanel sumir — alguém desmarca a opção, uma publicação sobrescreve o arquivo —,
+a área responde 403 em vez de ficar aberta.
+
+**O pacote de publicação não leva `.htaccess` para dentro de `interno/`.** É o
+cPanel que escreve esse arquivo. Se o pacote levasse um, apagaria a proteção
+na primeira publicação — e o cadeado do PHP fecharia a área, o que é seguro,
+mas deixaria a equipe sem acesso sem saber por quê.
+
+Escolhida por ser a mais simples que é segura: sem tabela de senhas, sem sessão
+para roubar, sem tela de login para atacar. O limite conhecido é não ter conta
+por pessoa nem registro de quem viu o quê. Se isso for preciso, troca-se só a
+porta de entrada; os painéis não mudam.
+
+### O que é interno não entra no repositório
+
+As ações do 100 Dias e os termos de cada painel moram em `config/interno.php`,
+que o `.gitignore` exclui como já exclui o `config.php`. O repositório leva só
+`config/interno.exemplo.php`, com a forma e sem o conteúdo.
+
+O motivo é a DP-03: se o repositório for aberto um dia, o planejamento interno
+iria junto com o código.
+
+**E nada interno é gravado nas tabelas públicas.** Os painéis consultam o texto
+das matérias na hora, pelo índice. Assim não há coluna "ação dos 100 Dias" que
+uma consulta pública pudesse deixar vazar.
+
+### Os painéis da primeira versão
+
+| Painel | O que mostra | Fonte |
+|---|---|---|
+| Regimento × Diário | Para cada competência do art. 3º, quantas matérias do Diário tratam dela. Competência sem matéria é lacuna | minuta do regimento, v16 |
+| 100 Dias | Para cada ação, as matérias do Diário que falam dela | Planejamento 100 Dias |
+| Missão 10 | Aguarda o documento | — |
+
+"Lacuna" aqui é o que o Diário não mostra, e não o que a pasta não fez: muita
+coisa acontece sem virar publicação oficial. A tela diz isso ao lado do número.
+
 ## Dúvidas e decisões pendentes
 
 | # | Pergunta | Alternativas | Impacto |
 |---|---|---|---|
 | ~~DP-01~~ | ~~Trazer o downloader ou reconstruir?~~ | reconstruído em 2026-09-22 | resolvido |
 | ~~DP-02~~ | ~~Quem cria o repositório?~~ | criado em 2026-09-22 | resolvido |
-| DP-03 | Abrir o repositório ao público agora que a coleta funciona? | (a) abrir; (b) seguir privado | Médio |
+| DP-03 | Abrir o repositório ao público agora que a coleta funciona? | (a) abrir; (b) seguir privado. **Antes de abrir, tirar `docs/regimento-interno-secti-minuta-v16.pdf`**, que é minuta interna; o conteúdo da área interna já fica fora do git | Médio |
 | ~~DP-04~~ | ~~Onde os PDFs ficam em definitivo~~ | (c) só texto, PDF por referência | resolvido em 2026-09-22 |
 | ~~DP-05~~ | ~~Que atos entram?~~ | **tudo, inclusive movimentação de pessoal** | resolvido em 2026-09-22 |
 | ~~DP-11~~ | ~~Nomes da pasta de CT&I ao longo do tempo~~ | respondido pela fonte primária em 2026-09-22 | resolvido |

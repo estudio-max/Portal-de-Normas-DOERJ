@@ -64,6 +64,14 @@ PARES = [
     ("--noite", "--acento-claro", 4.5, "etiqueta de filtro"),
     ("--tinta", "--acento-claro", 4.5, "Mais filtros aberto"),
     ("--acento", "--superficie-2", 4.5, "processo na linha sob o cursor"),
+    # Os prazos da área interna: 3:1 é o mínimo para marca gráfica, e o número
+    # grande do alerta é texto grande.
+    ("--prazo-vencido", "--superficie", 3.0, "coluna: já venceu"),
+    ("--prazo-alerta", "--superficie", 3.0, "coluna: vence em até 90 dias"),
+    ("--prazo-ano", "--superficie", 3.0, "coluna: vence em até 1 ano"),
+    ("--prazo-depois", "--superficie", 3.0, "coluna: vence depois"),
+    ("--prazo-alerta", "--superficie", 4.5, "número do alerta"),
+    ("--ressalva-tinta", "--ressalva-fundo", 4.5, "faixa da área interna"),
 ]
 
 

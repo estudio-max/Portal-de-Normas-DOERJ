@@ -164,6 +164,36 @@ quem estiver rastreando.
 
 ---
 
+## A área interna: a senha é criada no cPanel
+
+A pasta `interno/` guarda o que é só da equipe da SECTI: prazos dos
+compromissos, o 100 Dias, o regimento contra o Diário. Ela é protegida pela
+senha do próprio servidor, e **quem cria o usuário e a senha é quem administra a
+hospedagem** — a senha não passa pelo código, pelo repositório nem por quem
+programou.
+
+1. No cPanel, abra **Privacidade do diretório** (em inglês, *Directory
+   Privacy*).
+2. Entre em `doerj.fanara.com.br` e clique na pasta **`interno`**.
+3. Marque **Proteger este diretório por senha**, dê um nome — por exemplo,
+   "Área interna SECTI" — e salve.
+4. Na mesma tela, em **Criar usuário**, crie um usuário e uma senha para cada
+   pessoa ou um para a equipe.
+5. Abra `https://doerj.fanara.com.br/interno/`. O navegador deve pedir usuário
+   e senha, e depois mostrar os prazos.
+
+**Enquanto isso não for feito, a área responde "Área restrita" para todo
+mundo** — inclusive para a equipe. É de propósito: o PHP só abre a página quando
+o servidor diz que alguém entrou com senha, e sem a proteção ninguém entrou.
+
+**O pacote de publicação não leva `.htaccess` para dentro de `interno/`.** O
+cPanel grava a proteção num `.htaccess` dessa pasta; se uma publicação trouxesse
+outro, apagaria a senha. Se um dia a área voltar a dizer "Área restrita" para
+quem tem senha, é isto: refaça o passo 3.
+
+O conteúdo dos painéis vem de `config/interno.php`, que não está no git e vai
+no pacote. Sem ele, os painéis do 100 Dias e do regimento aparecem vazios.
+
 ## Requisitos do servidor
 
 | Item | Mínimo |

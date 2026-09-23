@@ -79,6 +79,13 @@ ENTIDADES = {
     "uenf": r"\buenf\b|universidade estadual do norte fluminense",
     "cecierj": r"\bcecierj\b|educacao superior a distancia",
     "faetec": r"\bfaetec\b|fundacao de apoio a escola tecnica",
+    # Os dois fundos que o regimento lista entre as vinculadas (art. 51, VI e
+    # VII), e que faltavam aqui até 2026-09-23. Vêm depois das instituições de
+    # propósito: o FATEC é gerido pela FAPERJ, e matéria da FAPERJ que cita o
+    # fundo continua sendo da FAPERJ. Ficam com o que só fala do fundo — as
+    # linhas dele nos decretos de crédito, por exemplo.
+    "fatec": r"\bfatec\b|fundo de apoio ao desenvolvimento tecnologico",
+    "funcierj": r"\bfuncierj\b|fundo para as ciencias",
     "subsis": r"\bsubsis\b",
     "subcon": r"\bsubcon\b",
     "subinov": r"\bsubinov\b",
@@ -440,6 +447,37 @@ def qual_entidade(alvo: str) -> str | None:
         if re.search(padrao, alvo, re.I):
             return nome
     return None
+
+
+# As vinculadas propriamente ditas, as sete do art. 51 do regimento. A SECTI e as
+# subsecretarias ficam fora da conta de "várias": citar a secretaria é o normal
+# de qualquer ato das vinculadas, que publicam sob o nome dela.
+VINCULADAS = ("faperj", "uerj", "uenf", "cecierj", "faetec", "fatec", "funcierj")
+
+
+def vinculadas_citadas(alvo: str) -> list[str]:
+    return [k for k in VINCULADAS if re.search(ENTIDADES[k], alvo, re.I)]
+
+
+def dona_da_materia(alvo: str, quem_publicou: str) -> str | None:
+    """A entidade a quem a matéria pertence.
+
+    Primeiro quem publicou: se a unidade que assina é uma vinculada, a matéria
+    é dela, mesmo que o texto cite outras — um edital da FAPERJ que lista UERJ e
+    UENF como elegíveis continua sendo da FAPERJ.
+
+    Depois, a matéria que cita **três ou mais vinculadas** não é de nenhuma:
+    vira "varias". Sem esta regra, a primeira da lista levava tudo. Medido em
+    2026-09-23: 444 matérias citavam três ou mais, 425 estavam contadas como da
+    FAPERJ, e eram quase todas decretos de crédito do governador com a tabela de
+    todas as unidades da SECTI — 70% do espaço da FAPERJ não era dela.
+    """
+    publicou = qual_entidade(quem_publicou) if quem_publicou.strip() else None
+    if publicou in VINCULADAS:
+        return publicou
+    if len(vinculadas_citadas(alvo)) >= 3:
+        return "varias"
+    return qual_entidade(alvo)
 
 
 def quais_naturezas(alvo: str) -> list[str]:

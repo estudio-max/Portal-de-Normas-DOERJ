@@ -40,6 +40,11 @@ final class Acervo
         'uenf'    => 'UENF',
         'cecierj' => 'CECIERJ',
         'faetec'  => 'FAETEC',
+        'fatec'   => 'FATEC',
+        'funcierj' => 'FUNCIERJ',
+        // Matéria que cita três ou mais vinculadas e não foi publicada por
+        // nenhuma delas: quase sempre decreto de crédito com a tabela de todas.
+        'varias'  => 'Várias vinculadas',
     ];
 
     public const POR_PAGINA = 20;
@@ -78,14 +83,25 @@ final class Acervo
         );
     }
 
-    /** @return array<int,array<string,mixed>> */
+    /**
+     * As vinculadas e quantas matérias cada uma tem.
+     *
+     * Só as de `ENTIDADES`. O classificador também marca matéria das próprias
+     * subsecretarias — SUBSIS, SUBCON, SUBINOV —, que não são vinculadas, e a
+     * home mostrava "subcon" solto no meio da FAPERJ e da UERJ.
+     *
+     * @return array<int,array<string,mixed>>
+     */
     public static function porEntidade(): array
     {
-        return Banco::todos(
-            'SELECT entidade_sistema, COUNT(*) AS atos FROM atos'
-            . ' WHERE entidade_sistema IS NOT NULL'
-            . ' GROUP BY entidade_sistema ORDER BY atos DESC'
-        );
+        return array_values(array_filter(
+            Banco::todos(
+                'SELECT entidade_sistema, COUNT(*) AS atos FROM atos'
+                . ' WHERE entidade_sistema IS NOT NULL'
+                . ' GROUP BY entidade_sistema ORDER BY atos DESC'
+            ),
+            static fn (array $l): bool => isset(self::ENTIDADES[$l['entidade_sistema']])
+        ));
     }
 
     /** @return array<int,array<string,mixed>> */
@@ -163,13 +179,50 @@ final class Acervo
         return str_replace('%s', $dir, $sql) . ', a.id';
     }
 
-    /** @return array<int,int> Os anos que o acervo tem, do mais recente. */
+    /**
+     * Os anos que o acervo tem, do mais recente, com quantos dias de cada.
+     *
+     * O menu mostrava "2024" como se houvesse o ano todo, e eram 227 matérias
+     * de um dia só — as amostras de 2010, 2013, 2018, 2021 e 2024 foram
+     * coletadas para testar o extrator em Diário antigo, e não para cobrir o
+     * ano. O João perguntou por que havia buracos nas datas. A resposta tem de
+     * estar na tela, e não só na conversa.
+     *
+     * @return array<int,array{ano:int,dias:int,primeiro:string,ultimo:string}>
+     */
     public static function anos(): array
     {
-        return array_map('intval', array_column(
-            Banco::todos('SELECT DISTINCT YEAR(data_pub) AS ano FROM atos ORDER BY ano DESC'),
-            'ano'
-        ));
+        return array_map(
+            static fn (array $l): array => [
+                'ano' => (int) $l['ano'],
+                'dias' => (int) $l['dias'],
+                'primeiro' => (string) $l['primeiro'],
+                'ultimo' => (string) $l['ultimo'],
+            ],
+            Banco::todos(
+                'SELECT YEAR(data_pub) AS ano, COUNT(DISTINCT data_pub) AS dias,'
+                . ' MIN(data_pub) AS primeiro, MAX(data_pub) AS ultimo'
+                . ' FROM atos GROUP BY YEAR(data_pub) ORDER BY ano DESC'
+            )
+        );
+    }
+
+    /**
+     * Como o ano aparece no menu: o número, e quanto dele o acervo tem.
+     *
+     * Ano completo é só o número. Um dia só diz qual. Ano pela metade diz até
+     * quando. Duzentos dias úteis é o que um ano tem de Diário, com folga.
+     */
+    public static function rotuloDoAno(array $a): string
+    {
+        $dm = static fn (string $iso): string => substr(data_br($iso), 0, 5);
+        if ($a['dias'] === 1) {
+            return $a['ano'] . ' — só o dia ' . $dm($a['primeiro']);
+        }
+        if ($a['dias'] < 200) {
+            return $a['ano'] . ' — de ' . $dm($a['primeiro']) . ' a ' . $dm($a['ultimo']);
+        }
+        return (string) $a['ano'];
     }
 
     /**

@@ -25,11 +25,27 @@ $naturezas = Acervo::porNatureza();
   </div>
 </form>
 
+<?php
+// "De 15/06/2010 a 22/09/2026" dava a entender dezesseis anos de Diário, e
+// entre uma ponta e outra havia cinco dias soltos. A frase diz o que há.
+$anos = Acervo::anos();
+$cheios = array_filter($anos, static fn ($a) => $a['dias'] >= 200);
+$parciais = array_filter($anos, static fn ($a) => $a['dias'] > 1 && $a['dias'] < 200);
+$amostras = array_filter($anos, static fn ($a) => $a['dias'] === 1);
+$lista = static fn (array $xs): string => preg_replace('/, ([^,]+)$/', ' e $1', implode(', ', array_column($xs, 'ano')));
+?>
 <p class="numeros">
   <strong><?= number_format($panorama['atos'] ?? 0, 0, ',', '.') ?></strong> matérias publicadas
-  em <strong><?= (int) ($panorama['edicoes'] ?? 0) ?></strong> edições,
-  de <?= data_br($panorama['primeiro'] ?? null) ?>
-  a <?= data_br($panorama['ultimo'] ?? null) ?>.
+  em <strong><?= (int) ($panorama['edicoes'] ?? 0) ?></strong> edições.
+<?php if ($cheios): ?>
+  <?= count($cheios) === 1 ? 'O ano' : 'Os anos' ?> de <?= e($lista($cheios)) ?> <?= count($cheios) === 1 ? 'está completo' : 'estão completos' ?>.
+<?php endif; ?>
+<?php foreach ($parciais as $a): ?>
+  De <?= $a['ano'] ?>, o acervo vai de <?= substr(data_br($a['primeiro']), 0, 5) ?> a <?= substr(data_br($a['ultimo']), 0, 5) ?>.
+<?php endforeach; ?>
+<?php if ($amostras): ?>
+  De <?= e($lista($amostras)) ?> há só um dia de cada, coletado como amostra.
+<?php endif; ?>
 </p>
 
 <h2>Por categoria</h2>
