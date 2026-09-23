@@ -11,42 +11,70 @@ si mesmo.
 
 ## Parte 1 — o que existe hoje
 
-Pastas, documentação e um fluxo de automação que ainda não tem o que executar.
+**No ar em `https://doerj.fanara.com.br` desde 2026-09-23**, com 1.979 matérias
+de 8 edições entre 2010 e 2026. Fora dos buscadores, como o portal da UFF.
+
+O caminho inteiro funciona: o site do IOERJ entrega o PDF, o PDF vira texto por
+matéria, o texto vira linha de banco classificada, e o portal lê o banco. Só a
+coleta é automática; extração, carga e publicação ainda são chamadas na mão.
 
 ```
 portal-normas-doerj/
-├── CLAUDE.md               contexto, com o verificado separado do herdado
-├── REQUIREMENTS.md         o que o produto precisa fazer
-├── ARCHITECTURE.md         este arquivo
-├── STEPS.md                em que ponto estamos
-├── .gitignore              PDF não entra no git
 ├── .github/workflows/
-│   └── download-diario.yml coleta agendada, dias úteis às 9h
-├── tools/
-│   ├── doerj_download.py   a coleta. Só biblioteca padrão
+│   └── download-diario.yml coleta agendada, dias úteis, janela de 3 dias
+├── tools/                  o caminho do dado, cada peça com --autoteste
+│   ├── doerj_download.py   IOERJ -> PDF. Só biblioteca padrão, porque roda no CI
 │   ├── doerj_extrair.py    PDF -> JSONL, uma linha por matéria
+│   ├── doerj_temas.py      escreve e_cti, confiança e ramos no JSONL
 │   ├── doerj_carregar.py   JSONL -> banco, idempotente
-│   └── doerj_relacoes.py   acha o que altera ou revoga o quê
+│   ├── doerj_relacoes.py   acha o que altera ou revoga o quê, e a vigência
+│   ├── lgpd.py             mascara CPF e endereço de particular, na extração
+│   ├── vocabulario.py      os termos, tirados do regimento e da Lei 9.809/2022
+│   ├── doerj_titulares.py  quem comandou cada pasta, lido da capa da edição
+│   ├── contraste.py        23 pares de cor contra a WCAG 2.1 AA
+│   ├── gerar_*.py          instalador, dump e pacote de publicação
+│   └── instalar-banco.sh   recarga do banco de produção, com backup datado
 ├── backend/db/
-│   ├── 001-esquema.sql     4 tabelas, decalcadas da UFF
-│   ├── 002-...             tipo e número nulos, mais o Id do IOERJ
-│   ├── 003-...             revogação parcial
+│   ├── 001..008-*.sql      migrações, em ordem
+│   ├── instalar.sql        as oito somadas, para instalar de uma vez
 │   └── provar_esquema.py   roda as consultas do portal contra dado real
-├── backend/api/            vazio
-├── public/                 o que vai para o servidor
-│   ├── .htaccess           HTTPS, cabeçalhos e recusa de indexação
+├── app/                    o portal. PHP 8.3, sem framework
+│   ├── bootstrap.php       config, escape, resumo() e paragrafos()
+│   ├── Banco.php           PDO com prepare nativo
+│   ├── Acervo.php          as consultas: panorama, busca, ficha, filtros
+│   ├── provar_texto.php    prova resumo() e paragrafos()
+│   └── Views/              layout, home, busca, ato, sobre, erro
+├── public/                 a raiz do site no servidor
+│   ├── .htaccess           HTTPS, CSP, e a recusa de indexação
 │   ├── robots.txt
-│   ├── index.php           página de espera
-│   └── assets/
-│       ├── css/base.css    identidade visual, decalcada do Mapa de CT&I
-│       └── fontes/         Nunito Sans, com a licença ao lado
-├── src/                    vazio
-└── docs/
-    ├── publicacao.md       como subir, e o que falta decidir
-    └── titulares-*.csv     quem comandou cada pasta, por data
+│   ├── index.php           o roteador
+│   └── assets/             base.css com os tokens do Mapa, e a Nunito Sans
+├── config/config.exemplo.php    o de verdade não entra no git
+└── docs/                   publicação, categorias, árvore de termos, titulares
 ```
 
-A coleta funciona e foi provada contra o site. Da extração para frente, nada.
+### Como o dado anda
+
+```
+IOERJ  --download-->  dados/AAAA/MM/*.pdf  (+ .json com guid e sha256)
+                          |
+                      extrair            mascara CPF e endereço aqui, antes de gravar
+                          v
+                  extraido/*.jsonl       uma linha por matéria
+                          |
+                       temas             e_cti, confiança, ramos, naturezas
+                          v
+                  extraido/*.jsonl
+                          |
+                      carregar
+                          v
+                     MySQL  -- relacoes -->  vigência recalculada
+                          |
+                        app/  -->  a tela
+```
+
+O PDF fica de fora do git e do banco: o portal guarda **só o texto extraído**, e
+aponta para o PDF na origem, como faz o portal de normas da UFF.
 
 ### O que se sabe da origem
 

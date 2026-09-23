@@ -405,6 +405,83 @@ Fechar isso é busca binária: quando duas datas mostram titulares diferentes,
 baixa-se o meio. Cada troca custa cerca de 5 downloads. Vale fazer para as
 trocas que interessam à lente 2, e não para todas.
 
+## Fase 7 — o portal no ar. Publicado em 2026-09-23
+
+`https://doerj.fanara.com.br`, com 1.979 matérias de 8 edições entre 2010 e 2026.
+Fora dos buscadores, por `X-Robots-Tag` e `robots.txt`, como o portal da UFF.
+
+### A diagramação é a do Portal de Normas da UFF
+
+A primeira versão era de cartões. O João preferiu a tabela da UFF, e ela é
+melhor mesmo para o uso real: espécie e número, ementa, órgão, data, relações,
+vigência. Quem compara vinte atos para achar um lê tabela, não cartão.
+
+A tabela pediu três dados que o esquema não tinha — processo, rótulo e vigência
+— e expôs dois defeitos que o cartão escondia.
+
+### O texto estava em serrote, e o motivo era geométrico
+
+O PyMuPDF corta uma linha em várias quando a justificação abre espaços largos.
+Não era caso isolado: **39% de todas as linhas do acervo, 67.412 de 172.260**,
+eram continuação de uma linha já começada. Um cronograma da FAPERJ saía com uma
+palavra por linha.
+
+Os pedaços compartilham o `y` e têm `x` crescente, e juntar por isso derruba as
+linhas de uma palavra de 39% para 4%.
+
+**Os parágrafos são remontados só na exibição.** O texto guardado continua fiel
+ao PDF: é dele que sai a busca e é ele que alguém confere contra a fonte. Se a
+regra de junção errar, perde-se a aparência de uma página, não o acervo.
+
+### 83% das matérias não têm ementa, e a linha ficava muda
+
+O Diário só publica ementa em ato numerado com cabeçalho: 337 de 1.979. Nas
+outras 1.642 a coluna mais larga da tabela dizia "(sem ementa no Diário)" e nada
+mais — uma data, um órgão, nenhuma pista do que foi decidido.
+
+Agora essas linhas trazem o começo do próprio texto. Não dá para mostrá-lo cru:
+toda matéria abre repetindo a hierarquia em caixa alta, que já está nas colunas
+ao lado. O `resumo()` corta essas linhas pela ausência de minúscula.
+
+A exceção importa e a prova a pegou: quando a poda não deixa nenhuma minúscula,
+a matéria é tabela de anexo ou lista de nomes, e o texto volta inteiro. Numa
+planilha de orçamento, o cabeçalho da tabela é o que explica as linhas de baixo.
+
+### 33 matérias vazias saíram do acervo
+
+Quando o marcador `Id:` do IOERJ cai dentro da tabela de um anexo, na coluna
+vizinha, ele fecha uma matéria que nunca começou. Eram 33 linhas que abriam numa
+página em branco — pior que a ausência, porque prometem um ato e não entregam.
+
+Nada se perdeu: o texto da vazia da própria SECTI está inteiro na Portaria
+DEGASE 512, com seus 8.028 caracteres. O acervo vai de 2.012 para 1.979.
+
+### Prova
+
+| O quê | Como se roda |
+|---|---|
+| Texto para a tela | `php app/provar_texto.php` — 12 casos de `resumo()` e `paragrafos()` |
+| Contraste WCAG 2.1 AA | `python tools/contraste.py` — 23 pares, todos passam |
+| Esquema | `python backend/db/provar_esquema.py` |
+| Extração, temas, LGPD | `--autoteste` em cada ferramenta |
+| Rotas | 200 em `/`, `/busca`, cada filtro e `/sobre`; 404 no resto |
+
+A recarga do banco agora roda duas vezes sem duplicar: guarda o acervo atual num
+`.sql.gz` datado, derruba as tabelas e recarrega. E o número esperado sai do
+próprio dump, contando os `INSERT` — estava cravado no script e envelhecia a
+cada carga, passando a mentir justamente quando alguém fosse conferir.
+
+### O que a fase ainda não faz
+
+- A lente 2, do histórico da SECTI, precisa de anos inteiros, e não de 8 dias
+  soltos. É a DP-12.
+- 236 matérias (12%) aparecem como "Matéria de 22/09/2026" na coluna de espécie,
+  porque não têm ato numerado nem rótulo do Diário. A ementa ao lado agora diz
+  do que tratam, então a linha não é mais muda — mas o nome ainda é a data.
+- 19 matérias começam com a URL do órgão colada no texto, restos do rodapé da
+  coluna. Cosmético, e medido.
+- A coleta é automática; extração, carga e publicação ainda são na mão.
+
 ## Dúvidas e decisões pendentes
 
 | # | Pergunta | Alternativas | Impacto |
@@ -423,5 +500,5 @@ trocas que interessam à lente 2, e não para todas.
 | DP-14 | A classificação temática precisa de revisão humana antes de publicar? | (a) sim, fila de curadoria; (b) não, com marca de automático | Médio |
 | DP-06 | Qual a licença do repositório | — | Baixo |
 | DP-07 | Como o portal deixa claro que o PDF não tem valor legal | (a) aviso fixo na página de cada ato; (b) só na página "sobre" | **Alto — é o risco jurídico do projeto** |
-| DP-10 | Onde o banco de produção vai morar, e quem faz backup | (a) MySQL da HostGator, onde o domínio já está; (b) outro | **Alto — hoje só existe banco de teste** |
+| ~~DP-10~~ | ~~Onde o banco de produção vai morar, e quem faz backup~~ | **MySQL da HostGator, `fanara87_doerj`. O `instalar-banco.sh` guarda um `.sql.gz` datado a cada recarga** | resolvida em 2026-09-23 |
 | DP-09 | O que fazer se o IOERJ quebrar os links | (a) aceitar e viver de texto; (b) guardar PDF só das normas, não do Diário inteiro | Médio — é a única defesa que devolveria o arquivo |
