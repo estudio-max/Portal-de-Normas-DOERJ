@@ -152,7 +152,11 @@ final class Acervo
             $p['ate'] = $f['ate'];
         }
 
-        $junta = !empty($f['q']) ? ' LEFT JOIN ato_corpo c ON c.ato_id = a.id' : '';
+        // O corpo entra sempre, e não só quando há busca: 83% das matérias não
+        // trazem ementa, e sem o começo do texto a linha da lista fica muda —
+        // uma data, um órgão e nada que diga do que o ato trata. A junção é
+        // pela chave primária de `ato_corpo`, uma linha por ato.
+        $junta = ' LEFT JOIN ato_corpo c ON c.ato_id = a.id';
         $filtro = $onde ? ' WHERE ' . implode(' AND ', $onde) : '';
 
         $total = (int) Banco::valor(
@@ -173,6 +177,7 @@ final class Acervo
             'SELECT a.id, a.tipo, a.numero, a.data_pub, a.data_ato, a.orgao,'
             . ' a.unidade, a.ementa, a.ementa_inferida, a.cabecalho, a.rotulo, a.processo,'
             . ' a.e_cti, a.confianca, a.entidade_sistema, a.pagina, a.status,'
+            . ' LEFT(c.texto, 700) AS inicio,'
             . ' (SELECT GROUP_CONCAT(DISTINCT r.tipo_relacao ORDER BY r.tipo_relacao)'
             . '  FROM ato_relacoes r WHERE r.ato_id = a.id) AS relacoes'
             . ' FROM atos a' . $junta . $filtro

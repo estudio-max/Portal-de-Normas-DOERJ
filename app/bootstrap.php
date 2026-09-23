@@ -78,6 +78,39 @@ function url_com(array $mudancas, string $caminho = '/busca'): string
 }
 
 /**
+ * As primeiras linhas úteis de uma matéria, para quando o Diário não publicou
+ * ementa — o caso de 83% delas.
+ *
+ * Toda matéria começa repetindo a hierarquia em caixa alta: SECRETARIA DE
+ * ESTADO DE POLÍCIA MILITAR, DIRETORIA GERAL DE SAÚDE, DESPACHO DO ORDENADOR.
+ * Isso já está nas colunas de órgão e de espécie, e se ficasse aqui gastaria as
+ * duas linhas de resumo repetindo o que a pessoa acabou de ler. Então o corte é
+ * nas linhas sem nenhuma letra minúscula, que é o que distingue o preâmbulo do
+ * texto do ato.
+ *
+ * Quando a poda não deixa nenhuma minúscula — matéria que é só tabela, ou só
+ * nomes em caixa alta — o texto volta inteiro: numa planilha de orçamento, o
+ * cabeçalho da tabela é justamente o que explica as linhas de baixo.
+ */
+function resumo(?string $texto, int $largura = 190): string
+{
+    if ($texto === null || trim($texto) === '') {
+        return '';
+    }
+    $corpo = preg_replace('/^(?:[^\p{Ll}\n]*\n)+/u', '', $texto) ?: '';
+    // Sem nenhuma minúscula no que sobrou, a poda não achou texto de ato: é
+    // tabela de anexo, lista de nomes, planilha de orçamento. Aí o corte só
+    // esconderia o cabeçalho da tabela, que é a parte que explica o resto.
+    if (!preg_match('/\p{Ll}/u', $corpo)) {
+        $corpo = $texto;
+    }
+    $corpo = trim(preg_replace('/\s+/u', ' ', $corpo) ?? '');
+    // mb_strimwidth cola a reticência onde a conta bateu, e quando isso cai num
+    // espaço sai um " …" solto.
+    return preg_replace('/\s+…$/u', '…', mb_strimwidth($corpo, 0, $largura, '…')) ?? '';
+}
+
+/**
  * Remonta os parágrafos do texto publicado, para leitura em tela.
  *
  * O Diário é composto em coluna de pouco mais de sete centímetros, e quebra a

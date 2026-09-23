@@ -596,12 +596,19 @@ def extrair(caminho: Path) -> list[dict]:
         # split com grupo devolve [antes, id, depois, id, depois...]
         for i, pedaço in enumerate(pedaços):
             if i % 2 == 1:
-                acumulado.append("")
+                corpo = "\n".join(acumulado).strip()
+                # Marcador sem nada antes dele. Acontece quando o `Id:` cai
+                # dentro da tabela de um anexo, na coluna vizinha, e o texto da
+                # matéria já foi fechado pelo marcador anterior. Guardar isso
+                # criaria uma linha na lista que abre numa página em branco —
+                # pior que a ausência, porque promete um ato e não entrega.
+                if not corpo:
+                    continue
                 materias.append({
                     "id_ioerj": pedaço,
                     "pagina": primeira_pagina,
                     "orgao": orgao_atual,
-                    "texto": "\n".join(acumulado).strip(),
+                    "texto": corpo,
                 })
                 acumulado = []
                 primeira_pagina = pagina

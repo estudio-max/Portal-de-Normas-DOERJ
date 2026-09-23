@@ -163,8 +163,6 @@ $classe_status = [
         <a href="/ato/<?= e($a['id']) ?>">
 <?php if ($a['tipo'] && $a['numero']): ?>
           <?= e($a['tipo']) ?> nº <?= e($a['numero']) ?>
-<?php elseif ($a['cabecalho']): ?>
-          <?= e(mb_strimwidth($a['cabecalho'], 0, 60, '…')) ?>
 <?php elseif ($a['rotulo']): ?>
           <?= e($a['rotulo']) ?>
 <?php else: ?>
@@ -182,6 +180,10 @@ $classe_status = [
 <?php if ($a['ementa_inferida']): ?>
         <span class="selo" title="Deduzida do bloco em caixa alta, e não de um campo publicado como ementa">deduzida</span>
 <?php endif; ?>
+<?php elseif (!empty($a['inicio'])): ?>
+        <span class="apoio" title="O Diário não publicou ementa para esta matéria. Estas são as primeiras linhas do texto.">
+          <?= e(resumo($a['inicio'])) ?>
+        </span>
 <?php else: ?>
         <span class="apoio">(sem ementa no Diário)</span>
 <?php endif; ?>
