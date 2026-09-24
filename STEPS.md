@@ -19,7 +19,7 @@ etapa funcional concluída.
 | 6 | Classificação temática de CT&I | **é a próxima** |
 | 7 | As três lentes, e a interface | pendente |
 | 8 | Valores casados com natureza de despesa | pendente |
-| 9 | Agendar extração e carga junto da coleta | pendente |
+| 9 | Agendar extração e carga junto da coleta | desenho aprovado em 2026-09-24; implementação pendente |
 
 ---
 
@@ -368,6 +368,19 @@ custeio, `4490` investimento, `3350` e `4450` repasse a terceiro setor.
 valor ficam em pedaços distantes, e casar os dois por expressão regular produz
 número errado com aparência de certo — que aqui é o pior resultado possível.
 
+### Fase 9 — importação automática na HostGator
+
+Desenho aprovado em 2026-09-24. O cron de dias úteis publicará diretamente,
+sem revisão humana prévia, uma janela de três dias: download, extração, temas,
+carga, relações e prazos. Antes de escrever no banco, adquire trava e cria
+backup; ao final, registra contagens e horário.
+
+A implementação começa por uma prova de capacidade da hospedagem: Python,
+PyMuPDF, PyMySQL, `flock`, cliente MySQL, espaço e tempo de execução. Se a prova
+falhar, o fallback já aprovado é processar no GitHub Actions e publicar por SSH.
+Critérios, falhas e segurança estão em
+`docs/superpowers/specs/2026-09-24-cron-hostgator-design.md`.
+
 ## DP-11 respondida: os nomes da pasta, conferidos no Diário
 
 A pergunta era como a pasta de CT&I se chamava em cada época, e eu não ia supor.
@@ -657,7 +670,7 @@ R$ 280 milhões numa delas. Ler essas tabelas é a Fase 8.
 | DP-17 | Guardar no banco a contagem de documentos ocultados por matéria | serve de trilha de auditoria da LGPD | Baixo |
 | DP-12 | Até que ano recompor o acervo, para a lente 2 | 250 edições por ano; 2010 foi testado e funciona. Agora é conta de texto, não de 20 GB de PDF | Alto — decide o esforço de coleta |
 | ~~DP-13~~ | ~~Quais são as categorias~~ | **onze**, em dois eixos. Oito aprovadas, três acrescentadas depois de medir o que sobrava | resolvida em 2026-09-23 |
-| DP-14 | A classificação temática precisa de revisão humana antes de publicar? | (a) sim, fila de curadoria; (b) não, com marca de automático | Médio |
+| ~~DP-14~~ | ~~A classificação temática precisa de revisão humana antes de publicar?~~ | **não; publicar direto e manter a marca de automático** | resolvida em 2026-09-24 |
 | DP-06 | Qual a licença do repositório | — | Baixo |
 | DP-07 | Como o portal deixa claro que o PDF não tem valor legal | (a) aviso fixo na página de cada ato; (b) só na página "sobre" | **Alto — é o risco jurídico do projeto** |
 | ~~DP-10~~ | ~~Onde o banco de produção vai morar, e quem faz backup~~ | **MySQL da HostGator, `fanara87_doerj`. O `instalar-banco.sh` guarda um `.sql.gz` datado a cada recarga** | resolvida em 2026-09-23 |

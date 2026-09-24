@@ -1,6 +1,9 @@
 # REQUIREMENTS.md — Portal de Normas DOERJ
 
-**Versão:** 0.2, de 2026-09-22
+**Versão:** 0.3, de 2026-09-24
+**O que mudou da 0.2:** a importação completa passa a ser planejada para rodar
+automaticamente na HostGator, com publicação direta e sem revisão prévia.
+
 **O que mudou da 0.1:** o produto deixou de ser um portal de normas genérico.
 Ganhou um recorte — ciência, pesquisa e inovação — e um público que inclui a
 gestão da SECTI-RJ, a alta gestão do Estado e os órgãos de controle.
@@ -72,6 +75,7 @@ só o assunto também.
 | RF-33 | Ocultar endereço de pessoa natural em auto de infração | **implementado** |
 | RF-31 | Não ser indexado por buscador | **implementado** — falta subir |
 | RF-32 | Ler a capa e registrar quem comandava cada pasta em cada data | **implementado** |
+| RF-34 | Baixar, extrair, classificar e carregar novas edições automaticamente no banco publicado | desenho aprovado; implementação pendente |
 
 **RF-17 existe porque o Diário esconde a autoria.** FAPERJ, UERJ, UENF, CECIERJ
 e FAETEC publicam sob "Secretaria de Estado de Ciência, Tecnologia e Inovação".
@@ -220,6 +224,7 @@ origem de cada número fica a um clique.
 | RNF-10 | O que foi deduzido por regra automática aparece marcado | proveniência não é enfeite | parcial |
 | RNF-11 | Nenhum CPF, documento de identidade ou endereço residencial no banco | LGPD, e minimização: o que não se guarda não vaza | **implementado** |
 | RNF-12 | `robots.txt`, `<meta robots>` e `X-Robots-Tag` recusando indexação | mesma razão do RNF-11 | **implementado** — falta subir |
+| RNF-13 | Uma execução automática não concorre com outra e mantém backup anterior à carga | cron escreve em produção sem operador | desenho aprovado; implementação pendente |
 
 **RNF-09 é o que separa esta ferramenta de uma planilha.** Se a tela diz que a
 SECTI aplicou determinado valor num programa, tem que haver o caminho até o
@@ -240,7 +245,7 @@ de controle não tem como responder, e a ferramenta vira passivo em vez de ativo
 | 6 | Classificação temática conferida à mão contra o PDF | pendente |
 | 7 | As três lentes respondem | pendente |
 | 8 | Valores casados com natureza de despesa, cada número mostrando sua origem | pendente |
-| 9 | Uma pessoa que nunca viu o portal acha uma norma pelo assunto | pendente |
+| 9 | O cron publica uma edição nova, repete sem duplicar e deixa backup e log verificáveis | desenho aprovado; implementação pendente |
 
 ---
 

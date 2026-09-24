@@ -126,6 +126,20 @@ Python, disparada por agendamento. Guarda o PDF original sem tocar em nada:
 ele é a prova. Qualquer dúvida sobre o que foi extraído se resolve voltando
 ao arquivo de origem, e um PDF "melhorado" na entrada apaga essa possibilidade.
 
+### Automação de produção — desenho aprovado, ainda não implementado
+
+O cron será executado na HostGator, fora do document root, e encadeará a janela
+de três dias da coleta até a carga no MySQL publicado. Uma trava exclusiva
+impedirá concorrência; backup, log e marcador de estado serão gravados antes e
+depois das etapas que alteram o banco. A credencial continuará somente em
+`config/config.php` e não aparecerá no comando do cron.
+
+A implantação depende de provar no servidor o interpretador Python e as
+dependências nativas. Se a hospedagem compartilhada não suportar PyMuPDF ou o
+tempo de execução necessário, o processamento muda para GitHub Actions e a
+HostGator recebe o resultado por SSH. O desenho completo está em
+`docs/superpowers/specs/2026-09-24-cron-hostgator-design.md`.
+
 ### Extração
 
 Separada da coleta de propósito. Quando a regra de identificação de atos
@@ -190,6 +204,8 @@ rápido exclui exatamente quem mais precisa dele.
 | AD-22 | Identidade visual decalcada do Mapa de CT&I | dois produtos da mesma secretaria. Quem usa um reconhece o outro sem ler o cabeçalho |
 | AD-23 | Sem modo escuro | o Mapa é claro. Inventar aqui um modo que lá não existe faria os dois parecerem coisas diferentes |
 | AD-24 | Fonte servida por este site, nunca por CDN | CDN entrega o endereço de rede de cada visitante a um terceiro, e num acervo que as pessoas consultam sobre si isso pesa mais |
+| AD-25 | Novas edições podem ser publicadas automaticamente, sem revisão humana prévia | decidido em 2026-09-24; campos inferidos continuam marcados como automáticos |
+| AD-26 | O cron principal roda na HostGator, com fallback para Actions + SSH se a prova de capacidade falhar | evita instalar uma automação incompatível ou pesada demais para a hospedagem compartilhada |
 
 ## Decisões adiadas
 
