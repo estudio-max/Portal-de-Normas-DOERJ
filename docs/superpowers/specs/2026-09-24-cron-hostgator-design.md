@@ -1,6 +1,6 @@
 # Automação diária da importação na HostGator
 
-**Data:** 2026-09-24  
+**Data:** 2026-09-24
 **Estado:** desenho aprovado em princípio; implementação depende da revisão deste documento
 
 ## Objetivo
@@ -143,4 +143,3 @@ visível no portal e de o registro de sucesso corresponder ao log do cron.
 - revisão humana antes da publicação;
 - criação de um endpoint HTTP de administração;
 - mudança de provedor ou de banco de dados.
-
