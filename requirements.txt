@@ -6,3 +6,4 @@
 
 pymupdf>=1.24    # leitura do PDF, na extração
 pymysql>=1.1     # carga e relações. Consulta parametrizada, não SQL montado à mão
+tzdata>=2025.2; sys_platform == "win32"  # ZoneInfo no desenvolvimento Windows
