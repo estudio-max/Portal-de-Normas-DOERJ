@@ -109,18 +109,18 @@ RAMOS = {
             r"sistema estadual de ciencia",
             r"sistemas? municipa(?:l|is) de ciencia",
             r"consorcios? intermunicipa\w*.{0,60}\b(ciencia|inovacao|tecnolog|pesquisa)",
-            r"plano de acao.{0,40}\\b(ciencia|inovacao)",
+            r"plano de acao.{0,40}\b(ciencia|inovacao)",
             r"mapeamento tecnologico",
             r"prospeccao tecnologica",
             r"diagnostico.{0,30}tecnologic",
-            r"indicadores.{0,30}\\b(ciencia|inovacao|tecnolog)",
+            r"indicadores.{0,30}\b(ciencia|inovacao|tecnolog)",
             r"cadastro estadual de icts",
             r"redes de pesquisa",
             r"grupos de pesquisa",
             r"supervisao finalistica",
             r"autonomia universitaria",
             r"conselho estadual de ciencia",
-            r"camara tecnica.{0,30}\\b(ciencia|inovacao)",
+            r"camara tecnica.{0,30}\b(ciencia|inovacao)",
             r"foruns? oficia",
         ],
     },
@@ -136,7 +136,7 @@ RAMOS = {
             r"educacao (?:tecnica|tecnologica|profissionalizante)",
             r"ensino (?:tecnico|tecnologico)",
             r"formacao.{0,25}recursos humanos",
-            r"capacitacao.{0,30}\\b(ciencia|tecnolog|inovacao)",
+            r"capacitacao.{0,30}\b(ciencia|tecnolog|inovacao)",
             r"bolsa de estimulo a inovacao",
             r"bolsa de extensao tecnologica",
             r"bolsa de (?:pesquisa|iniciacao|mestrado|doutorado|pos-doutorado)",
@@ -149,7 +149,7 @@ RAMOS = {
             r"popularizacao da ciencia",
             r"cultura cientifica",
             r"divulgacao cientifica",
-            r"equidade (?:racial|de genero).{0,40}\\b(ciencia|tecnolog|inovacao)",
+            r"equidade (?:racial|de genero).{0,40}\b(ciencia|tecnolog|inovacao)",
             r"laboratori(?:o|os) de pesquisa",
             r"pesquisador(?:es|as)?\b",
         ],
@@ -511,7 +511,11 @@ def autoteste() -> int:
 
     # Cada ramo reconhece o que é dele.
     assert POR_RAMO["governanca"].search(limpar("atualização da Estratégia Estadual e seu Plano de Ação de inovação"))
+    assert POR_RAMO["governanca"].search(limpar("indicadores estaduais de ciência"))
+    assert POR_RAMO["governanca"].search(limpar("câmara técnica para inovação"))
     assert POR_RAMO["conhecimento"].search(limpar("bolsa de iniciação científica"))
+    assert POR_RAMO["conhecimento"].search(limpar("capacitação para ciência e inovação"))
+    assert POR_RAMO["conhecimento"].search(limpar("equidade racial na ciência"))
     assert POR_RAMO["inovacao"].search(limpar("apoio a incubadoras e aceleradoras"))
     assert POR_RAMO["inovacao"].search(limpar("encomenda tecnológica e bônus tecnológico"))
 
@@ -528,7 +532,7 @@ def autoteste() -> int:
 
     # Mas o sentido de verdade sobrevive.
     assert GENERICO.search(limpar("Secretaria de Estado de Ciência e Tecnologia"))
-    assert GENERICO.search(limpar("bolsa em ciências agrárias"))
+    assert GENERICO.search(limpar("programa de desenvolvimento científico"))
 
     # O nome da pasta não pode ser comido pela limpeza do ruído. Foi o que
     # aconteceu quando `de` estava entre os verbos de notificação: 148 matérias
