@@ -161,6 +161,26 @@ atos = [
     ),
 ]
 eid = roda("SELECT id FROM edicoes WHERE numero='173' AND sequencia=1;").split()[-1]
+eid_extra = roda(
+    "SELECT id FROM edicoes WHERE data_pub='2026-09-22' AND sequencia=2;"
+).split()[-1]
+
+print("=== republicação preserva o Id do IOERJ em outra edição ===")
+roda(
+    "INSERT INTO atos (id, edicao_id, id_ioerj, data_pub, orgao_slug) VALUES "
+    f"('repub-original', {eid}, '2623228', '2026-09-22', 'teste');"
+)
+roda(
+    "INSERT INTO atos (id, edicao_id, id_ioerj, data_pub, orgao_slug) VALUES "
+    f"('repub-republicado', {eid_extra}, '2623228', '2026-09-22', 'teste');"
+)
+roda(
+    "INSERT INTO atos (id, edicao_id, id_ioerj, data_pub, orgao_slug) VALUES "
+    f"('repub-duplicado', {eid_extra}, '2623228', '2026-09-22', 'teste');",
+    esperar_erro=True,
+)
+assert roda("SELECT COUNT(*) FROM atos WHERE id_ioerj='2623228';").split()[-1] == "2"
+
 for aid, num, ementa, orgao in atos:
     ementa_sql = ementa.replace("'", "''")
     roda(

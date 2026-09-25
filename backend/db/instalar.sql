@@ -224,15 +224,14 @@ CREATE TABLE ato_relacoes (
 -- de um dia significaria jogar fora quatro quintos dele, ou inventar número
 -- para o que não tem. As duas saídas são piores que a coluna aceitar nulo.
 --
--- A outra mudança é a chave natural. O IOERJ fecha cada matéria publicada com
--- um `Id: 2765345`, e esse número é dele, não nosso. Guardá-lo faz a
--- reimportação ser idempotente sem nenhum esforço: recarregar a mesma edição
--- atualiza as mesmas linhas em vez de duplicar tudo.
+-- A outra mudança é a chave natural da edição. O IOERJ fecha cada matéria
+-- publicada com um `Id: 2765345`, e esse número é dele, não nosso. Ele pode
+-- reaparecer numa republicação, portanto a identidade completa é a edição mais
+-- esse ID. Recarregar a mesma edição atualiza as mesmas linhas.
 
 ALTER TABLE atos
-  -- O identificador da própria Imprensa Oficial. `UNIQUE` porque ele é único de
-  -- verdade: 265 matérias na edição de 22/09/2026, 265 identificadores
-  -- distintos.
+  -- O identificador da própria Imprensa Oficial. É único na edição: o Diário
+  -- pode republicar a mesma matéria, preservando o número editorial.
   ADD COLUMN id_ioerj VARCHAR(16) DEFAULT NULL
       COMMENT 'o "Id:" que fecha a matéria no PDF. Chave natural da origem'
       AFTER edicao_id,
@@ -561,6 +560,17 @@ CREATE TABLE IF NOT EXISTS ato_prazo (
   KEY ix_fim (fim),
   CONSTRAINT fk_prazo_ato FOREIGN KEY (ato_id) REFERENCES atos (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ========================================================================
+-- 011-identidade-da-publicacao.sql
+-- ========================================================================
+-- Uma republicação conserva o Id editorial do IOERJ, mas pertence a outra
+-- edição. O Id é único dentro da edição, não no acervo inteiro.
+
+ALTER TABLE atos
+  DROP INDEX uq_ioerj,
+  ADD UNIQUE KEY uq_edicao_ioerj (edicao_id, id_ioerj);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
