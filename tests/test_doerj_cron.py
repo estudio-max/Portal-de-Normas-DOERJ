@@ -243,6 +243,12 @@ class OperacaoSeguraTest(TestCase):
 
 
 class CliTest(TestCase):
+    def test_saida_de_temas_e_compativel_com_python_39(self):
+        fonte = (
+            Path(__file__).resolve().parents[1] / "tools" / "doerj_temas.py"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn('print(f"       {re.sub(', fonte)
+
     def test_entrypoint_so_executa_depois_de_definir_pipeline(self):
         fonte = (
             Path(__file__).resolve().parents[1] / "tools" / "doerj_cron.py"

@@ -169,8 +169,9 @@ def processar(caminhos: list[Path], amostra: int) -> int:
             print(f"\n  --- {ramo['nome']} ({ramo['subsecretaria']}) ---")
             for r in itens:
                 rotulo = r.get("ementa") or (r.get("texto") or "")[:110]
+                rotulo_linha = re.sub(r"[ \n]+", " ", rotulo)[:104]
                 print(f"    [{r['confianca']}] {str(r.get('unidade') or r.get('orgao'))[:32]:34}")
-                print(f"       {re.sub(r'[ \n]+', ' ', rotulo)[:104]}")
+                print(f"       {rotulo_linha}")
     return 0
 
 
