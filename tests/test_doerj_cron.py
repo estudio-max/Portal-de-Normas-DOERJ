@@ -1,5 +1,6 @@
 from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from datetime import date, datetime, timedelta
+import gzip
 import io
 import json
 import os
@@ -182,18 +183,21 @@ class OperacaoSeguraTest(TestCase):
         self.assertEqual(comando[-1], "config.php")
 
     @patch("tools.doerj_cron.ler_banco")
-    @patch("tools.doerj_cron.subprocess.run")
-    def test_backup_usa_cnf_temporario_sem_senha_no_comando(self, rodar, ler):
+    @patch("tools.doerj_cron.subprocess.Popen")
+    def test_backup_usa_cnf_temporario_sem_senha_no_comando(self, iniciar, ler):
         ler.return_value = Banco("localhost", 3306, "doerj", "portal", "segredo#1")
-        rodar.return_value.returncode = 0
-        rodar.return_value.stderr = b""
+        processo = iniciar.return_value
+        processo.stdout = io.BytesIO(b"-- backup SQL\n")
+        processo.stderr = io.BytesIO()
+        processo.wait.return_value = 0
         with TemporaryDirectory() as tmp:
             contexto = contexto_de_teste(Path(tmp))
 
             destino = fazer_backup(contexto)
 
             self.assertTrue(destino.exists())
-            comando = rodar.call_args.args[0]
+            self.assertEqual(gzip.decompress(destino.read_bytes()), b"-- backup SQL\n")
+            comando = iniciar.call_args.args[0]
             self.assertNotIn("segredo#1", comando)
             self.assertTrue(
                 any(str(parte).startswith("--defaults-extra-file=") for parte in comando)

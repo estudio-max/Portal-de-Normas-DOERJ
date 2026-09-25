@@ -171,20 +171,24 @@ def fazer_backup(contexto: Contexto) -> Path:
     pasta.mkdir(parents=True, exist_ok=True)
     destino = pasta / f"doerj-{datetime.now(FUSO_RIO):%Y%m%d-%H%M%S}.sql.gz"
     with arquivo_cnf(banco) as cnf, gzip.open(destino, "wb") as saida:
-        resultado = subprocess.run(
+        processo = subprocess.Popen(
             [
                 "mysqldump",
                 f"--defaults-extra-file={cnf}",
                 "--no-tablespaces",
                 banco.nome,
             ],
-            stdout=saida,
+            stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        if resultado.returncode:
+        if processo.stdout is None or processo.stderr is None:
+            raise RuntimeError("não consegui abrir os fluxos do mysqldump")
+        shutil.copyfileobj(processo.stdout, saida)
+        erro = processo.stderr.read()
+        if processo.wait():
             destino.unlink(missing_ok=True)
             raise RuntimeError(
-                resultado.stderr.decode("utf-8", errors="replace").strip()
+                erro.decode("utf-8", errors="replace").strip()
             )
     return destino
 
