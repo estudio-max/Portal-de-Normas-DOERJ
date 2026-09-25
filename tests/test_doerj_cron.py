@@ -1,15 +1,27 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+import json
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest import TestCase
+from unittest import TestCase, skipIf
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from tools.doerj_cron import (
+    Banco,
     Contexto,
+    ExecucaoEmAndamento,
+    arquivo_cnf,
+    consultar_contagens,
+    fazer_backup,
+    gravar_estado,
     janela_padrao,
     jsonls_dos_pdfs,
+    ler_banco,
+    limpar_antigos,
     pdfs_da_janela,
     rodar_pipeline,
+    trava_exclusiva,
 )
 
 
@@ -123,3 +135,102 @@ class PipelineTest(TestCase):
 
         self.assertEqual(chamadas, ["doerj_download.py"])
         self.assertEqual(resultado.pdfs, 0)
+
+
+class OperacaoSeguraTest(TestCase):
+    def test_arquivo_mysql_cita_hash_barra_e_aspas(self):
+        banco = Banco("localhost", 3306, "doerj", "usuario", 'a#b\\c"d')
+
+        with arquivo_cnf(banco) as caminho:
+            if os.name != "nt":
+                self.assertEqual(caminho.stat().st_mode & 0o777, 0o600)
+            texto = caminho.read_text(encoding="utf-8")
+            self.assertIn('password="a#b\\\\c\\"d"', texto)
+            self.assertNotIn("password=a#", texto)
+
+        self.assertFalse(caminho.exists())
+
+    def test_estado_atomico_preserva_sucesso_se_serializacao_falhar(self):
+        with TemporaryDirectory() as tmp:
+            destino = Path(tmp) / "ultimo-sucesso.json"
+            gravar_estado(destino, {"estado": "sucesso", "atos": 10})
+            self.assertEqual(json.loads(destino.read_text())["atos"], 10)
+
+            with self.assertRaises(TypeError):
+                gravar_estado(destino, {"invalido": object()})
+
+            self.assertEqual(json.loads(destino.read_text())["atos"], 10)
+
+    @patch("tools.doerj_cron.subprocess.run")
+    def test_le_config_php_por_json_sem_senha_na_linha_de_comando(self, rodar):
+        rodar.return_value.stdout = (
+            '{"host":"localhost","porta":3306,"nome":"doerj",'
+            '"usuario":"portal","senha":"segredo#1"}'
+        )
+
+        banco = ler_banco(Path("config.php"), php="php")
+
+        self.assertEqual(banco.senha, "segredo#1")
+        comando = rodar.call_args.args[0]
+        self.assertNotIn("segredo#1", comando)
+        self.assertEqual(comando[-1], "config.php")
+
+    @patch("tools.doerj_cron.ler_banco")
+    @patch("tools.doerj_cron.subprocess.run")
+    def test_backup_usa_cnf_temporario_sem_senha_no_comando(self, rodar, ler):
+        ler.return_value = Banco("localhost", 3306, "doerj", "portal", "segredo#1")
+        rodar.return_value.returncode = 0
+        rodar.return_value.stderr = b""
+        with TemporaryDirectory() as tmp:
+            contexto = contexto_de_teste(Path(tmp))
+
+            destino = fazer_backup(contexto)
+
+            self.assertTrue(destino.exists())
+            comando = rodar.call_args.args[0]
+            self.assertNotIn("segredo#1", comando)
+            self.assertTrue(
+                any(str(parte).startswith("--defaults-extra-file=") for parte in comando)
+            )
+
+    @patch("tools.doerj_cron.ler_banco")
+    @patch("tools.doerj_cron.subprocess.run")
+    def test_converte_contagens_mysql_em_campos_nomeados(self, rodar, ler):
+        ler.return_value = Banco("localhost", 3306, "doerj", "portal", "segredo#1")
+        rodar.return_value.stdout = "12\t3\t4\t5\n"
+        with TemporaryDirectory() as tmp:
+            contexto = contexto_de_teste(Path(tmp))
+
+            contagens = consultar_contagens(contexto)
+
+        self.assertEqual(
+            contagens,
+            {"atos": 12, "edicoes": 3, "relacoes": 4, "prazos": 5},
+        )
+
+    def test_remove_so_arquivos_antigos_em_subpastas(self):
+        agora = datetime(2026, 9, 24, 12, tzinfo=ZoneInfo("UTC"))
+        with TemporaryDirectory() as tmp:
+            pasta = Path(tmp)
+            antiga = pasta / "2026" / "08" / "antiga.pdf"
+            nova = pasta / "2026" / "09" / "nova.pdf"
+            antiga.parent.mkdir(parents=True)
+            nova.parent.mkdir(parents=True)
+            antiga.write_bytes(b"antiga")
+            nova.write_bytes(b"nova")
+            instante_antigo = (agora - timedelta(days=20)).timestamp()
+            os.utime(antiga, (instante_antigo, instante_antigo))
+
+            limpar_antigos(pasta, 14, agora)
+
+            self.assertFalse(antiga.exists())
+            self.assertTrue(nova.exists())
+
+    @skipIf(os.name == "nt", "fcntl é validado no runner Linux")
+    def test_trava_recusa_segunda_execucao(self):
+        with TemporaryDirectory() as tmp:
+            caminho = Path(tmp) / "cron.lock"
+            with trava_exclusiva(caminho):
+                with self.assertRaises(ExecucaoEmAndamento):
+                    with trava_exclusiva(caminho):
+                        pass
