@@ -1,4 +1,6 @@
+from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from datetime import date, datetime, timedelta
+import io
 import json
 import os
 from pathlib import Path
@@ -11,7 +13,10 @@ from tools.doerj_cron import (
     Banco,
     Contexto,
     ExecucaoEmAndamento,
+    Resultado,
+    argumentos,
     arquivo_cnf,
+    checar_ambiente,
     consultar_contagens,
     fazer_backup,
     gravar_estado,
@@ -19,6 +24,7 @@ from tools.doerj_cron import (
     jsonls_dos_pdfs,
     ler_banco,
     limpar_antigos,
+    main,
     pdfs_da_janela,
     rodar_pipeline,
     trava_exclusiva,
@@ -234,3 +240,149 @@ class OperacaoSeguraTest(TestCase):
                 with self.assertRaises(ExecucaoEmAndamento):
                     with trava_exclusiva(caminho):
                         pass
+
+
+class CliTest(TestCase):
+    def test_recusa_fim_anterior_ao_inicio(self):
+        with self.assertRaises(SystemExit) as erro:
+            argumentos(["--inicio", "2026-09-24", "--fim", "2026-09-23"])
+
+        self.assertEqual(erro.exception.code, 2)
+
+    def test_checa_todos_os_programas_e_modulos_obrigatorios(self):
+        resultado = checar_ambiente(
+            localizar=lambda nome: "/bin/" + nome,
+            importar=lambda nome: None,
+        )
+
+        self.assertEqual(
+            resultado,
+            {
+                "php": "/bin/php",
+                "mysql": "/bin/mysql",
+                "mysqldump": "/bin/mysqldump",
+                "fitz": "ok",
+                "pymysql": "ok",
+            },
+        )
+
+    @patch("tools.doerj_cron.checar_ambiente")
+    def test_checar_ambiente_pelo_main_nao_le_configuracao(self, checar):
+        checar.return_value = {"php": "/bin/php", "mysql": "/bin/mysql"}
+        saida = io.StringIO()
+
+        with redirect_stdout(saida):
+            codigo = main(["--checar-ambiente"])
+
+        self.assertEqual(codigo, 0)
+        self.assertIn('"php": "/bin/php"', saida.getvalue())
+
+    @patch("tools.doerj_cron.trava_exclusiva")
+    @patch("tools.doerj_cron.ler_banco")
+    @patch("tools.doerj_cron.checar_ambiente")
+    def test_segunda_execucao_retorna_75(self, checar, ler, trava):
+        checar.return_value = {
+            "php": "php",
+            "mysql": "mysql",
+            "mysqldump": "mysqldump",
+            "fitz": "ok",
+            "pymysql": "ok",
+        }
+        ler.return_value = Banco("localhost", 3306, "doerj", "portal", "segredo")
+        trava.side_effect = ExecucaoEmAndamento("outra importação já está rodando")
+        with TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            codigo = main(
+                [
+                    "--raiz",
+                    tmp,
+                    "--trabalho",
+                    str(Path(tmp) / "var"),
+                    "--inicio",
+                    "2026-09-24",
+                ]
+            )
+
+        self.assertEqual(codigo, 75)
+
+    @patch("tools.doerj_cron.rodar_pipeline")
+    @patch("tools.doerj_cron.trava_exclusiva", return_value=nullcontext())
+    @patch("tools.doerj_cron.ler_banco")
+    @patch("tools.doerj_cron.checar_ambiente")
+    def test_falha_grava_estado_sem_senha(
+        self, checar, ler, _trava, pipeline
+    ):
+        checar.return_value = {
+            "php": "php",
+            "mysql": "mysql",
+            "mysqldump": "mysqldump",
+            "fitz": "ok",
+            "pymysql": "ok",
+        }
+        ler.return_value = Banco(
+            "localhost", 3306, "doerj", "portal", "segredo-que-nao-vaza"
+        )
+        pipeline.side_effect = RuntimeError("a etapa falhou")
+        with TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            trabalho = Path(tmp) / "var"
+
+            codigo = main(
+                [
+                    "--raiz",
+                    tmp,
+                    "--trabalho",
+                    str(trabalho),
+                    "--inicio",
+                    "2026-09-24",
+                ]
+            )
+
+            falha = (trabalho / "estado" / "ultima-falha.json").read_text(
+                encoding="utf-8"
+            )
+        self.assertEqual(codigo, 1)
+        self.assertNotIn("segredo-que-nao-vaza", falha)
+        self.assertIn("a etapa falhou", falha)
+
+    @patch("tools.doerj_cron.rodar_pipeline")
+    @patch("tools.doerj_cron.trava_exclusiva", return_value=nullcontext())
+    @patch("tools.doerj_cron.ler_banco")
+    @patch("tools.doerj_cron.checar_ambiente")
+    def test_sucesso_grava_contagens_e_retorna_zero(
+        self, checar, ler, _trava, pipeline
+    ):
+        checar.return_value = {
+            "php": "php",
+            "mysql": "mysql",
+            "mysqldump": "mysqldump",
+            "fitz": "ok",
+            "pymysql": "ok",
+        }
+        ler.return_value = Banco("localhost", 3306, "doerj", "portal", "segredo")
+        pipeline.return_value = Resultado(
+            "2026-09-24",
+            "2026-09-24",
+            1,
+            1,
+            {"atos": 12, "edicoes": 3, "relacoes": 4, "prazos": 5},
+        )
+        with TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
+            trabalho = Path(tmp) / "var"
+
+            codigo = main(
+                [
+                    "--raiz",
+                    tmp,
+                    "--trabalho",
+                    str(trabalho),
+                    "--inicio",
+                    "2026-09-24",
+                ]
+            )
+
+            sucesso = json.loads(
+                (trabalho / "estado" / "ultimo-sucesso.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+        self.assertEqual(codigo, 0)
+        self.assertEqual(sucesso["contagens"]["atos"], 12)

@@ -6,16 +6,21 @@ scripts próprios em ``tools/``.
 
 from __future__ import annotations
 
-from contextlib import contextmanager
-from dataclasses import dataclass
+import argparse
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
+from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta
 import gzip
+import importlib
 import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
+import sys
 import tempfile
+import traceback
 from typing import Sequence
 from zoneinfo import ZoneInfo
 
@@ -223,6 +228,132 @@ def limpar_antigos(pasta: Path, dias: int, agora: datetime) -> None:
     for caminho in sorted(diretorios, reverse=True):
         if not any(caminho.iterdir()):
             caminho.rmdir()
+
+
+def checar_ambiente(localizar=shutil.which, importar=importlib.import_module):
+    resultado = {}
+    for programa in ("php", "mysql", "mysqldump"):
+        caminho = localizar(programa)
+        if not caminho:
+            raise RuntimeError(f"programa obrigatório ausente: {programa}")
+        resultado[programa] = caminho
+    for modulo in ("fitz", "pymysql"):
+        importar(modulo)
+        resultado[modulo] = "ok"
+    return resultado
+
+
+def argumentos(argv=None):
+    raiz_padrao = Path(__file__).resolve().parent.parent
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--raiz", type=Path, default=raiz_padrao)
+    parser.add_argument("--trabalho", type=Path, default=Path.home() / "doerj-var")
+    parser.add_argument("--inicio", type=date.fromisoformat)
+    parser.add_argument("--fim", type=date.fromisoformat)
+    parser.add_argument("--checar-ambiente", action="store_true")
+    parser.add_argument("--contar", action="store_true")
+    args = parser.parse_args(argv)
+    if args.fim and not args.inicio:
+        parser.error("--fim exige --inicio")
+    if args.inicio and args.fim and args.fim < args.inicio:
+        parser.error("a data final é anterior à inicial")
+    return args
+
+
+def _contexto(args, inicio: date, fim: date, banco: Banco) -> Contexto:
+    return Contexto(
+        raiz=args.raiz.resolve(),
+        trabalho=args.trabalho.resolve(),
+        inicio=inicio,
+        fim=fim,
+        python=sys.executable,
+        ambiente={
+            "DOERJ_HOST": banco.host,
+            "DOERJ_PORT": str(banco.porta),
+            "DOERJ_USER": banco.usuario,
+            "DOERJ_SENHA": banco.senha,
+            "DOERJ_BANCO": banco.nome,
+        },
+    )
+
+
+def main(argv=None) -> int:
+    args = argumentos(argv)
+    try:
+        programas = checar_ambiente()
+    except Exception as erro:
+        print(f"ambiente inválido: {erro}", file=sys.stderr)
+        return 1
+    if args.checar_ambiente:
+        print(json.dumps(programas, ensure_ascii=False, indent=2))
+        return 0
+
+    inicio, fim = (
+        (args.inicio, args.fim or args.inicio) if args.inicio else janela_padrao()
+    )
+    try:
+        banco = ler_banco(
+            args.raiz / "config" / "config.php", programas["php"]
+        )
+    except Exception as erro:
+        print(f"configuração inválida: {erro}", file=sys.stderr)
+        return 1
+    contexto = _contexto(args, inicio, fim, banco)
+    if args.contar:
+        print(json.dumps(consultar_contagens(contexto), indent=2))
+        return 0
+
+    agora = datetime.now(FUSO_RIO)
+    logs = contexto.trabalho / "logs"
+    estado = contexto.trabalho / "estado"
+    logs.mkdir(parents=True, exist_ok=True)
+    log = logs / f"{agora:%Y-%m-%d-%H%M%S}.log"
+    try:
+        with log.open("w", encoding="utf-8") as registro:
+            with redirect_stdout(registro), redirect_stderr(registro):
+                with trava_exclusiva(contexto.trabalho / "cron.lock"):
+                    resultado = rodar_pipeline(
+                        contexto,
+                        backup=fazer_backup,
+                        contagens=consultar_contagens,
+                    )
+                    payload = {
+                        "estado": "sucesso",
+                        "executado_em": datetime.now(FUSO_RIO).isoformat(),
+                        **asdict(resultado),
+                    }
+                    gravar_estado(estado / "ultimo-sucesso.json", payload)
+                    limpar_antigos(contexto.trabalho / "backups", 14, agora)
+                    limpar_antigos(logs, 30, agora)
+                    limpar_antigos(contexto.dados, 14, agora)
+                    limpar_antigos(contexto.extraido, 14, agora)
+    except ExecucaoEmAndamento as erro:
+        print(str(erro), file=sys.stderr)
+        return 75
+    except Exception as erro:
+        with log.open("a", encoding="utf-8") as registro:
+            traceback.print_exc(file=registro)
+        gravar_estado(
+            estado / "ultima-falha.json",
+            {
+                "estado": "falha",
+                "executado_em": datetime.now(FUSO_RIO).isoformat(),
+                "tipo": type(erro).__name__,
+                "mensagem": str(erro),
+                "log": str(log),
+            },
+        )
+        print(f"importação falhou; consulte {log}", file=sys.stderr)
+        return 1
+    print(
+        f"importação concluída: {resultado.pdfs} PDF(s), "
+        f"{resultado.contagens.get('atos', 0)} ato(s)"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 
 def executar(comando, *, cwd: Path, env: dict[str, str]) -> None:
