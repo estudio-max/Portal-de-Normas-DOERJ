@@ -204,6 +204,21 @@ class OperacaoSeguraTest(TestCase):
             )
 
     @patch("tools.doerj_cron.ler_banco")
+    @patch("tools.doerj_cron.subprocess.Popen")
+    def test_backup_vazio_eh_recusado_e_removido(self, iniciar, ler):
+        ler.return_value = Banco("localhost", 3306, "doerj", "portal", "segredo#1")
+        processo = iniciar.return_value
+        processo.stdout = io.BytesIO()
+        processo.wait.return_value = 0
+        with TemporaryDirectory() as tmp:
+            contexto = contexto_de_teste(Path(tmp))
+
+            with self.assertRaisesRegex(RuntimeError, "backup vazio"):
+                fazer_backup(contexto)
+
+            self.assertEqual(list((contexto.trabalho / "backups").glob("*")), [])
+
+    @patch("tools.doerj_cron.ler_banco")
     @patch("tools.doerj_cron.subprocess.run")
     def test_converte_contagens_mysql_em_campos_nomeados(self, rodar, ler):
         ler.return_value = Banco("localhost", 3306, "doerj", "portal", "segredo#1")

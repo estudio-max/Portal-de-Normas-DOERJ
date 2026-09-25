@@ -170,26 +170,36 @@ def fazer_backup(contexto: Contexto) -> Path:
     pasta = contexto.trabalho / "backups"
     pasta.mkdir(parents=True, exist_ok=True)
     destino = pasta / f"doerj-{datetime.now(FUSO_RIO):%Y%m%d-%H%M%S}.sql.gz"
-    with arquivo_cnf(banco) as cnf, gzip.open(destino, "wb") as saida:
-        processo = subprocess.Popen(
-            [
-                "mysqldump",
-                f"--defaults-extra-file={cnf}",
-                "--no-tablespaces",
-                banco.nome,
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        if processo.stdout is None or processo.stderr is None:
-            raise RuntimeError("não consegui abrir os fluxos do mysqldump")
-        shutil.copyfileobj(processo.stdout, saida)
-        erro = processo.stderr.read()
-        if processo.wait():
-            destino.unlink(missing_ok=True)
+    try:
+        with arquivo_cnf(banco) as cnf, tempfile.TemporaryFile() as erros:
+            with gzip.open(destino, "wb") as saida:
+                processo = subprocess.Popen(
+                    [
+                        "mysqldump",
+                        f"--defaults-extra-file={cnf}",
+                        "--no-tablespaces",
+                        banco.nome,
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=erros,
+                )
+                if processo.stdout is None:
+                    raise RuntimeError("não consegui abrir a saída do mysqldump")
+                shutil.copyfileobj(processo.stdout, saida)
+                codigo = processo.wait()
+            erros.seek(0)
+            erro = erros.read()
+        if codigo:
             raise RuntimeError(
                 erro.decode("utf-8", errors="replace").strip()
             )
+        with gzip.open(destino, "rb") as verificador:
+            if not verificador.read(1):
+                raise RuntimeError("backup vazio")
+    except Exception:
+        if destino.exists():
+            destino.unlink(missing_ok=True)
+        raise
     return destino
 
 
