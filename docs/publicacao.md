@@ -215,7 +215,7 @@ em dias úteis às **09:15 de Brasília**. O relógio do host foi conferido em
 2026-09-24 como UTC-03:00, o mesmo fuso de Brasília usado pelo agendador:
 
 ```cron
-15 9 * * 1-5 TZ=America/Sao_Paulo /home1/fanara87/doerj-var/venv/bin/python /home1/fanara87/doerj/tools/doerj_cron.py --raiz /home1/fanara87/doerj --trabalho /home1/fanara87/doerj-var >> /home1/fanara87/doerj-var/logs/cron.log 2>&1
+15 9 * * 1-5 PATH=/usr/local/bin:/usr/bin:/bin TZ=America/Sao_Paulo /home1/fanara87/doerj-var/venv/bin/python /home1/fanara87/doerj/tools/doerj_cron.py --raiz /home1/fanara87/doerj --trabalho /home1/fanara87/doerj-var >> /home1/fanara87/doerj-var/logs/cron.log 2>&1
 ```
 
 O comando processa os três dias anteriores, reaproveita PDFs já presentes e

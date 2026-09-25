@@ -132,7 +132,7 @@ Um cron da HostGator executa, às 09:15 de Brasília em dias úteis, a janela do
 três dias anteriores fora do document root. O relógio do host foi conferido em
 UTC-03:00 antes da ativação:
 
-    TZ=America/Sao_Paulo /home1/fanara87/doerj-var/venv/bin/python
+    PATH=/usr/local/bin:/usr/bin:/bin TZ=America/Sao_Paulo /home1/fanara87/doerj-var/venv/bin/python
       /home1/fanara87/doerj/tools/doerj_cron.py
       --raiz /home1/fanara87/doerj --trabalho /home1/fanara87/doerj-var
 
