@@ -1,0 +1,57 @@
+name: Qualidade
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  testar:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Testes unitarios do cron
+        run: python -m unittest discover -s tests -v
+      - name: Autotestes Python
+        run: |
+          python tools/doerj_download.py --autoteste
+          python tools/doerj_extrair.py --autoteste
+          python tools/doerj_temas.py --autoteste
+          python tools/doerj_carregar.py --autoteste
+          python tools/doerj_relacoes.py --autoteste
+          python tools/doerj_prazos.py --autoteste
+          python tools/lgpd.py
+          python tools/vocabulario.py
+          python tools/contraste.py
+      - name: Texto PHP
+        run: php app/provar_texto.php
+      - name: Esquema MySQL real
+        env:
+          DOERJ_HOST: 127.0.0.1
+          DOERJ_PORT: 3306
+          DOERJ_USER: root
+          DOERJ_SENHA: ""
+          DOERJ_BANCO: doerj_teste
+        run: python backend/db/provar_esquema.py
+      - name: Instalador SQL reproduzivel
+        run: |
+          cp backend/db/instalar.sql /tmp/instalar.sql
+          python tools/gerar_instalador.py
+          cmp /tmp/instalar.sql backend/db/instalar.sql

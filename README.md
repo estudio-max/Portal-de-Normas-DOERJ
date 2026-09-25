@@ -121,6 +121,33 @@ O teste cria o banco do zero, insere três decretos reais do Diário de 22/09/20
 e roda as consultas do portal, incluindo a pergunta que mais importa: **essa
 norma ainda vale?**
 
+## Qualidade
+
+O mesmo conjunto de provas executado pelo GitHub Actions pode ser repetido
+localmente a partir da raiz do repositório:
+
+```bash
+python -m unittest discover -s tests -v
+python tools/doerj_download.py --autoteste
+python tools/doerj_extrair.py --autoteste
+python tools/doerj_temas.py --autoteste
+python tools/doerj_carregar.py --autoteste
+python tools/doerj_relacoes.py --autoteste
+python tools/doerj_prazos.py --autoteste
+python tools/lgpd.py
+python tools/vocabulario.py
+python tools/contraste.py
+php app/provar_texto.php
+python backend/db/provar_esquema.py
+cp backend/db/instalar.sql /tmp/instalar.sql
+python tools/gerar_instalador.py
+cmp /tmp/instalar.sql backend/db/instalar.sql
+```
+
+`backend/db/provar_esquema.py` é destrutivo somente para o banco indicado por
+`DOERJ_BANCO`: ele apaga e recria esse banco. Use exclusivamente um banco
+descartável, como `doerj_teste`, e nunca a configuração de produção.
+
 ---
 
 ## Como está organizado

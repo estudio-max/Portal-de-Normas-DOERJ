@@ -126,19 +126,22 @@ Python, disparada por agendamento. Guarda o PDF original sem tocar em nada:
 ele é a prova. Qualquer dúvida sobre o que foi extraído se resolve voltando
 ao arquivo de origem, e um PDF "melhorado" na entrada apaga essa possibilidade.
 
-### Automação de produção — desenho aprovado, ainda não implementado
+### Automação de produção — implementada
 
-O cron será executado na HostGator, fora do document root, e encadeará a janela
-de três dias da coleta até a carga no MySQL publicado. Uma trava exclusiva
-impedirá concorrência; backup, log e marcador de estado serão gravados antes e
-depois das etapas que alteram o banco. A credencial continuará somente em
-`config/config.php` e não aparecerá no comando do cron.
+Um cron da HostGator executa, às 09:15 de Brasília em dias úteis, a janela dos
+três dias anteriores fora do document root. O relógio do host foi conferido em
+UTC-03:00 antes da ativação:
 
-A implantação depende de provar no servidor o interpretador Python e as
-dependências nativas. Se a hospedagem compartilhada não suportar PyMuPDF ou o
-tempo de execução necessário, o processamento muda para GitHub Actions e a
-HostGator recebe o resultado por SSH. O desenho completo está em
-`docs/superpowers/specs/2026-09-24-cron-hostgator-design.md`.
+    TZ=America/Sao_Paulo /home1/fanara87/doerj-var/venv/bin/python
+      /home1/fanara87/doerj/tools/doerj_cron.py
+      --raiz /home1/fanara87/doerj --trabalho /home1/fanara87/doerj-var
+
+O orquestrador adquire trava exclusiva, baixa, extrai, classifica, cria backup
+gzip antes de carregar, recalcula relações e prazos e grava contagens/estado.
+Dados temporários, backups, logs e estado ficam em doerj-var, com permissão
+700; a credencial fica somente em config/config.php (600) e não aparece no
+comando. A implementação e sua prova manual estão registradas em
+docs/publicacao.md.
 
 ### Extração
 
@@ -205,7 +208,7 @@ rápido exclui exatamente quem mais precisa dele.
 | AD-23 | Sem modo escuro | o Mapa é claro. Inventar aqui um modo que lá não existe faria os dois parecerem coisas diferentes |
 | AD-24 | Fonte servida por este site, nunca por CDN | CDN entrega o endereço de rede de cada visitante a um terceiro, e num acervo que as pessoas consultam sobre si isso pesa mais |
 | AD-25 | Novas edições podem ser publicadas automaticamente, sem revisão humana prévia | decidido em 2026-09-24; campos inferidos continuam marcados como automáticos |
-| AD-26 | O cron principal roda na HostGator, com fallback para Actions + SSH se a prova de capacidade falhar | evita instalar uma automação incompatível ou pesada demais para a hospedagem compartilhada |
+| AD-26 | O cron principal roda na HostGator | Python 3.9, PyMuPDF, PyMySQL, MySQL e mysqldump foram comprovados no servidor; o fallback para Actions + SSH permanece apenas contingência |
 
 ## Decisões adiadas
 
