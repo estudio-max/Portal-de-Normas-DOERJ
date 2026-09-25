@@ -243,6 +243,15 @@ class OperacaoSeguraTest(TestCase):
 
 
 class CliTest(TestCase):
+    def test_entrypoint_so_executa_depois_de_definir_pipeline(self):
+        fonte = (
+            Path(__file__).resolve().parents[1] / "tools" / "doerj_cron.py"
+        ).read_text(encoding="utf-8")
+        self.assertLess(
+            fonte.index("def rodar_pipeline("),
+            fonte.index('if __name__ == "__main__":'),
+        )
+
     def test_recusa_fim_anterior_ao_inicio(self):
         with self.assertRaises(SystemExit) as erro:
             argumentos(["--inicio", "2026-09-24", "--fim", "2026-09-23"])

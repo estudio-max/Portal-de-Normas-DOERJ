@@ -352,10 +352,6 @@ def main(argv=None) -> int:
     return 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
-
-
 def executar(comando, *, cwd: Path, env: dict[str, str]) -> None:
     print("+", " ".join(str(parte) for parte in comando))
     subprocess.run(comando, cwd=cwd, env=env, check=True)
@@ -440,3 +436,7 @@ def rodar_pipeline(
         len(jsonls),
         numeros,
     )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
