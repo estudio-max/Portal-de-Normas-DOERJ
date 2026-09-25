@@ -370,16 +370,17 @@ número errado com aparência de certo — que aqui é o pior resultado possíve
 
 ### Fase 9 — importação automática na HostGator
 
-Desenho aprovado em 2026-09-24. O cron de dias úteis publicará diretamente,
-sem revisão humana prévia, uma janela de três dias: download, extração, temas,
-carga, relações e prazos. Antes de escrever no banco, adquire trava e cria
-backup; ao final, registra contagens e horário.
+Implementada em 2026-09-25. O cron da HostGator roda às 09:15 de Brasília nos
+dias úteis e publica diretamente, sem revisão humana prévia, a janela de três
+dias: download, extração, temas, carga, relações e prazos. Python 3.9,
+PyMuPDF, PyMySQL, MySQL, mysqldump e 124 GB livres foram comprovados antes da
+ativação.
 
-A implementação começa por uma prova de capacidade da hospedagem: Python,
-PyMuPDF, PyMySQL, `flock`, cliente MySQL, espaço e tempo de execução. Se a prova
-falhar, o fallback já aprovado é processar no GitHub Actions e publicar por SSH.
-Critérios, falhas e segurança estão em
-`docs/superpowers/specs/2026-09-24-cron-hostgator-design.md`.
+Em 24/09/2026, uma edição com 258 matérias foi carregada; a repetição preservou
+as contagens (50.320 atos, 215 edições, 582 relações e 1.434 prazos). Cada
+execução segura trava exclusiva, backup gzip anterior à carga, log privado e
+marcador de estado. Operação, retenção e desativação estão em
+docs/publicacao.md.
 
 ## DP-11 respondida: os nomes da pasta, conferidos no Diário
 

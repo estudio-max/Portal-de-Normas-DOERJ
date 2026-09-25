@@ -21,7 +21,9 @@ do responsável técnico.
 | `outputs/dados.sql.gz` | idem |
 
 **`tools/` e `docs/` não precisam ir.** São para quem mantém, não para quem
-visita, e o que não está no servidor não pode ser servido por engano.
+visita, e o que não está no servidor não pode ser servido por engano. A exceção
+é o conjunto mínimo de ferramentas de importação automática, descrito abaixo,
+que fica fora do document root.
 
 ---
 
@@ -206,35 +208,45 @@ no pacote. Sem ele, os painéis do 100 Dias e do regimento aparecem vazios.
 
 ---
 
-## Como atualizar depois
+## Importação automática
 
-O acervo cresce por fora: a coleta roda no GitHub Actions, a extração e a carga
-rodam na máquina de quem mantém, e o resultado vai para o servidor como dump.
+Desde 2026-09-25, a HostGator executa uma importação direta, sem revisão humana,
+em dias úteis às **09:15 de Brasília**. O relógio do host foi conferido em
+2026-09-24 como UTC-03:00, o mesmo fuso de Brasília usado pelo agendador:
+
+```cron
+15 9 * * 1-5 TZ=America/Sao_Paulo /home1/fanara87/doerj-var/venv/bin/python /home1/fanara87/doerj/tools/doerj_cron.py --raiz /home1/fanara87/doerj --trabalho /home1/fanara87/doerj-var >> /home1/fanara87/doerj-var/logs/cron.log 2>&1
+```
+
+O comando processa os três dias anteriores, reaproveita PDFs já presentes e
+reprocessa a janela de forma idempotente, impede execuções concorrentes, cria
+um backup do MySQL antes da carga e atualiza
+relações e prazos. O estado da última execução fica em
+`/home1/fanara87/doerj-var/estado/ultimo-sucesso.json`; falhas ficam em
+`ultima-falha.json` e têm log próprio em `logs/`.
+
+Os diretórios temporários `dados/` e `extraido/` e os backups são retidos por
+14 dias; logs, por 30 dias. O runtime `doerj-var` é privado (700), e
+`config/config.php` tem permissão 600.
+
+Para executar manualmente uma janela, sem alterar o agendamento:
 
 ```bash
-python tools/doerj_download.py --inicio 2026-09-23
-python tools/doerj_extrair.py  dados/2026/09/*.pdf
-python tools/doerj_temas.py    extraido/*.jsonl
-python tools/doerj_carregar.py extraido/*.jsonl --pdf dados
-python tools/doerj_relacoes.py
-python tools/gerar_dump.py
+/home1/fanara87/doerj-var/venv/bin/python /home1/fanara87/doerj/tools/doerj_cron.py \
+  --raiz /home1/fanara87/doerj --trabalho /home1/fanara87/doerj-var \
+  --inicio 2026-09-24 --fim 2026-09-24
 ```
 
-Depois, no phpMyAdmin, importar `outputs/dados.sql.gz` de novo. O dump traz
-`INSERT` e não `REPLACE`, então **importar por cima de dado existente dá erro de
-chave duplicada** — para recarga completa, esvaziar as tabelas antes:
+Para conferir o backup mais recente sem restaurá-lo sobre produção:
 
-```sql
-SET FOREIGN_KEY_CHECKS = 0;
-TRUNCATE ato_relacoes; TRUNCATE ato_ramo; TRUNCATE ato_natureza;
-TRUNCATE ato_corpo; TRUNCATE atos; TRUNCATE edicoes;
-SET FOREIGN_KEY_CHECKS = 1;
+```bash
+arquivo=$(ls -1t /home1/fanara87/doerj-var/backups/*.sql.gz | head -1)
+gzip -t "$arquivo"
+gunzip -c "$arquivo" | head -20
 ```
 
-**Isto apaga a curadoria humana junto.** Enquanto ninguém tiver conferido
-classificação nenhuma, não custa nada. Quando começar a custar, o caminho é
-dar acesso remoto ao MySQL e rodar o `doerj_carregar.py` direto contra o
-servidor — ele preserva o que está marcado como `conferido`.
+Para desativar a automação, remova somente essa linha em **Cron Jobs** no cPanel
+ou por `crontab -e`; não apague `doerj-var`, os backups ou os logs.
 
 ---
 
@@ -242,9 +254,7 @@ servidor — ele preserva o que está marcado como `conferido`.
 
 | O quê | Por quê importa |
 |---|---|
-| Automação da carga | hoje é manual, e manual esquece |
-| Cópia de segurança do banco | o painel da HostGator faz, mas ninguém testou restaurar |
-| Coleta contínua indo ao ar | o Actions coleta; ninguém leva ao servidor sozinho |
+| Restauração do backup em ambiente descartável | o backup gzip foi validado, mas restaurar em produção não é teste seguro |
 
 E um limite que precisa aparecer na tela, não só aqui: **o Diário publica
 movimentação orçamentária, não o orçamento.** Um número que pareça ser o total
