@@ -20,8 +20,9 @@ IDEMPOTENTE, E DE GRAÇA
 -----------------------
 
 O IOERJ fecha cada matéria publicada com um `Id: 2765345`. Esse número é dele,
-não nosso, e é único. Como `atos.id_ioerj` é `UNIQUE`, recarregar a mesma edição
-atualiza as mesmas linhas em vez de duplicar o Diário do dia.
+não nosso, e é único dentro da edição. Quando uma matéria é republicada, o
+Diário conserva o mesmo ID; por isso a dupla `edicao_id` + `id_ioerj` identifica
+a ocorrência. Recarregar a mesma edição atualiza as mesmas linhas.
 
 Isso importa mais do que parece: a extração vai ser refeita muitas vezes
 conforme o reconhecimento melhora, e cada refazer precisa ser seguro.
@@ -93,6 +94,20 @@ def identificador(registro: dict) -> str:
         miolo = apelido(f"{registro['tipo']}-{registro['numero']}")
         return f"{data}-{miolo}-{ioerj}"[:191]
     return f"{data}-m{ioerj}"[:191]
+
+
+def identificador_com_edicao(registro: dict) -> str:
+    """Desambigua URL somente quando outra edição já usa a URL base."""
+    caderno = apelido(registro.get("caderno")) or "caderno"
+    sufixo = f"-{caderno}-{registro.get('sequencia') or 1}"
+    return f"{identificador(registro)[:191 - len(sufixo)]}{sufixo}"
+
+
+def identificador_disponivel(cursor, registro: dict) -> str:
+    """Devolve a URL base, ou a variante determinística da edição em colisão."""
+    base = identificador(registro)
+    cursor.execute("SELECT id FROM atos WHERE id=%s", (base,))
+    return base if cursor.fetchone() is None else identificador_com_edicao(registro)
 
 
 def ano_de(registro: dict) -> int | None:
@@ -202,9 +217,12 @@ def carregar(caminho: Path, pasta_pdf: Path | None) -> tuple[int, int, int]:
                     pulados += 1
                     continue
 
-                c.execute("SELECT id FROM atos WHERE id_ioerj=%s", (r["id_ioerj"],))
+                c.execute(
+                    "SELECT id FROM atos WHERE edicao_id=%s AND id_ioerj=%s",
+                    (edicao_id, r["id_ioerj"]),
+                )
                 ja = c.fetchone()
-                ident = ja[0] if ja else identificador(r)
+                ident = ja[0] if ja else identificador_disponivel(c, r)
 
                 campos = (
                     edicao_id, r["id_ioerj"], r.get("tipo"), r.get("numero"),
@@ -308,6 +326,14 @@ def autoteste() -> int:
     a = {"data_pub": "2026-09-22", "id_ioerj": "111", "tipo": "Decreto", "numero": "1"}
     b = {"data_pub": "2026-09-22", "id_ioerj": "222", "tipo": "Decreto", "numero": "1"}
     assert identificador(a) != identificador(b)
+
+    # Se o IOERJ republicar a mesma matéria no mesmo dia em outro caderno, a
+    # URL base coincide; o sufixo da edição resolve sem adulterar o Id da fonte.
+    base = {"data_pub": "2026-09-22", "id_ioerj": "2623228", "tipo": "Edital",
+            "numero": "1", "caderno": "parte-i", "sequencia": 1}
+    outro = {**base, "caderno": "parte-ib", "sequencia": 2}
+    assert identificador(base) == "2026-09-22-edital-1-2623228"
+    assert identificador_com_edicao(outro).endswith("-parte-ib-2")
 
     assert len(identificador({"data_pub": "2026-09-22", "id_ioerj": "1",
                               "tipo": "Resolução " * 40, "numero": "1"})) <= 191
