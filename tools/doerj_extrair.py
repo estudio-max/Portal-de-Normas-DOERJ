@@ -64,6 +64,7 @@ que confunde as duas afirma o que ninguém escreveu.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -112,7 +113,13 @@ TITULO_DO_SUMARIO = re.compile(r"^S\s*U\s*M\s*Á\s*R\s*I\s*O\s*$", re.I)
 # O que não é órgão, embora saia na mesma fonte.
 NAO_E_ORGAO = re.compile(r"^(S\s*U\s*M\s*Á\s*R\s*I\s*O|www\.|ADMINISTRAÇÃO VINCULADA)", re.I)
 
-MARCADOR = re.compile(r"Id:\s*(\d+)")
+# O identificador editorial tinha seis algarismos em 2010 e tem sete nas
+# edições atuais. Ele ocupa uma linha própria no Diário. Números maiores, os
+# que trazem dígito verificador e IDs citados no corpo de um extrato pertencem
+# a pessoas ou a outra publicação, portanto não encerram uma matéria.
+MARCADOR = re.compile(
+    r"(?m)^[ \t]*Id:[ \t]*(\d{6,7})(?!\d|[ \t]*[-/])[ \t]*$"
+)
 
 TIPOS = (
     r"DECRETO|RESOLU[ÇC][ÃA]O CONJUNTA|RESOLU[ÇC][ÃA]O|PORTARIA|DELIBERA[ÇC][ÃA]O|"
@@ -577,9 +584,25 @@ def dados_do_nome(caminho: Path) -> tuple[str | None, str | None, int]:
     return m.group(1), m.group(2), int(m.group(3) or 1)
 
 
-def extrair(caminho: Path) -> list[dict]:
-    blocos, _ = ler_pdf(caminho)
-    data_pub, caderno, sequencia = dados_do_nome(caminho)
+def id_sem_marcador(caminho: Path) -> str:
+    """Identificador local e estável quando a edição não imprime `Id:`.
+
+    O prefixo deixa explícito que não é um identificador publicado pelo IOERJ;
+    os nove hexadecimais mantêm o valor dentro do VARCHAR(16) do esquema.
+    """
+    digest = hashlib.sha256(caminho.stem.encode("utf-8")).hexdigest()[:9]
+    return f"sem-id-{digest}"
+
+
+def separar_materias(
+    blocos: list[tuple[int, str, str | None]], id_fallback: str
+) -> list[dict]:
+    """Fecha matérias pelo `Id:` e preserva um ato final sem marcador.
+
+    Edições extraordinárias podem terminar logo após o ato, sem imprimir o
+    identificador do IOERJ. Só o texto residual que contém cabeçalho de ato
+    publicado em caixa alta vira matéria; capa, anúncio e rodapé não viram.
+    """
 
     materias = []
     acumulado: list[str] = []
@@ -614,6 +637,23 @@ def extrair(caminho: Path) -> list[dict]:
                 primeira_pagina = pagina
             elif pedaço.strip():
                 acumulado.append(pedaço.strip())
+
+    corpo_final = "\n".join(acumulado).strip()
+    if corpo_final and achar_atos(juntar_hifen(corpo_final)):
+        materias.append({
+            "id_ioerj": id_fallback,
+            "pagina": primeira_pagina,
+            "orgao": orgao_atual,
+            "texto": corpo_final,
+        })
+
+    return materias
+
+
+def extrair(caminho: Path) -> list[dict]:
+    blocos, _ = ler_pdf(caminho)
+    data_pub, caderno, sequencia = dados_do_nome(caminho)
+    materias = separar_materias(blocos, id_sem_marcador(caminho))
 
     registros = []
     for m in materias:
@@ -682,6 +722,19 @@ def resumir(registros: list[dict], nome: str) -> None:
 
 
 def autoteste() -> int:
+    # O Diário também imprime identificadores funcionais no corpo dos atos.
+    # Eles não encerram matéria: têm dígito verificador ("2022536-9") ou oito
+    # algarismos ("51507579"). Os IDs editoriais variam de seis algarismos no
+    # acervo de 2010 a sete nas edições atuais.
+    assert MARCADOR.findall("texto\nId: 606549\n") == ["606549"]
+    assert MARCADOR.findall("texto\nId: 2623599\n") == ["2623599"]
+    assert MARCADOR.findall("matrícula Id: 2022536-9") == []
+    assert MARCADOR.findall("matrícula Id: 51507579") == []
+    assert MARCADOR.findall("matrícula Id:50987313") == []
+    # Um extrato posterior pode citar o Id editorial de outra publicação.
+    # Só a linha que contém exclusivamente o marcador encerra uma matéria.
+    assert MARCADOR.findall("Extrato de Termo (Id: 2705778), publicado") == []
+
     assert virar_data("21 DE SETEMBRO DE 2026") == "2026-09-21"
     assert virar_data("08/03/79") == "1979-03-08"
     assert virar_data("19/05/99") == "1999-05-19"
@@ -830,6 +883,23 @@ def autoteste() -> int:
         "2026-09-22", "parte-i-poder-executivo", 1)
     assert dados_do_nome(Path("2024-01-15-parte-i-poder-executivo-2.pdf")) == (
         "2024-01-15", "parte-i-poder-executivo", 2)
+
+    # A edição extraordinária 109-A, de 19/06/2025, tem um decreto na única
+    # página, mas não imprime o `Id:` que normalmente encerra cada matéria.
+    # O último ato reconhecível não pode desaparecer por causa disso.
+    sem_marcador = [
+        (1, "DECRETO Nº 49.685 DE 19 DE JUNHO DE 2025", "ATOS DO PODER EXECUTIVO"),
+        (1, "DECRETA LUTO OFICIAL POR 03 (TRÊS) DIAS.", "ATOS DO PODER EXECUTIVO"),
+        (1, "Art. 1º - Fica decretado luto oficial.", "ATOS DO PODER EXECUTIVO"),
+    ]
+    id_local = id_sem_marcador(Path("2025-06-19-parte-i-poder-executivo.pdf"))
+    achadas = separar_materias(sem_marcador, id_local)
+    assert len(achadas) == 1, achadas
+    assert achadas[0]["id_ioerj"] == id_local and id_local.startswith("sem-id-")
+    assert achar_atos(achadas[0]["texto"])[0]["numero"] == "49.685"
+
+    # Texto residual sem ato reconhecível não vira matéria inventada.
+    assert separar_materias([(1, "Endereços", None)], id_local) == []
 
     print("autoteste: tudo certo")
     return 0

@@ -264,8 +264,16 @@ das matérias não têm número.** Com `numero NOT NULL`, carregar um Diário
 significaria jogar fora quatro quintos dele, ou inventar número para o que não
 tem. A `002` deixa `tipo` e `numero` nulos e acrescenta `id_ioerj`.
 
-`id_ioerj` é a chave natural da origem, e sai de graça: como é `UNIQUE`,
-recarregar a mesma edição atualiza as mesmas linhas em vez de duplicar o Diário.
+A chave natural da origem é o par `(edicao_id, id_ioerj)`, e não o `id_ioerj`
+sozinho: recarregar a mesma edição atualiza as mesmas linhas em vez de duplicar o
+Diário. Até 2026-09-25 a chave era só o `id_ioerj`, e isso apagava
+republicações: o IOERJ republica a matéria com o mesmo `Id:` em outra edição, e
+a segunda carga sobrescrevia a primeira. A migração `011` trocou a chave. Medido
+no acervo de 547 edições: 28 `Id:` aparecem em mais de uma edição — o
+`2623228`, por exemplo, em 31/01/2025 e 03/02/2025 —, e agora cada ocorrência é
+uma linha. Seis `Id:` aparecem duas vezes **na mesma edição**, com o mesmo texto:
+é o Diário imprimindo a matéria em dobro, não republicação, e viram uma linha só.
+Por isso os 121.028 registros extraídos dão 121.022 atos.
 Provado rodando a carga duas vezes: 850 novos, depois 850 atualizados.
 
 ### O detector de relações acha menos do que poderia, de propósito
