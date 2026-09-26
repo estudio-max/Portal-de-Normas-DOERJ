@@ -146,7 +146,8 @@ select:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
   background: var(--noite);
   color: #fff;
 }
-.cabecalho__marca { display: flex; align-items: center; gap: 0.7rem; }
+.cabecalho__marca { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.7rem; }
+.cabecalho__atualizado { flex-basis: 100%; font-size: 0.8rem; color: #9fb4bb; }
 .cabecalho__simbolo { width: 2.3rem; height: 2.3rem; color: var(--realce); }
 .cabecalho__titulo { color: #fff; text-decoration: none; display: block; }
 .cabecalho__titulo strong { font-size: 1.05rem; letter-spacing: 0.01em; }

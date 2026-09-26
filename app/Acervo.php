@@ -84,6 +84,20 @@ final class Acervo
     }
 
     /**
+     * Data do Diário mais recente no acervo, para o cabeçalho dizer até quando
+     * os dados vão. Nulo se o banco não responder: o cabeçalho também desenha a
+     * página de erro, e não pode ser ele a derrubá-la.
+     */
+    public static function ultimaEdicao(): ?string
+    {
+        try {
+            return Banco::um('SELECT MAX(data_pub) AS d FROM edicoes')['d'] ?? null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * As vinculadas e quantas matérias cada uma tem.
      *
      * Só as de `ENTIDADES`. O classificador também marca matéria das próprias

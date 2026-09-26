@@ -48,6 +48,9 @@ $atual = static fn (string $r): string => str_starts_with($caminho, $r)
       <strong>DOERJ fácil</strong>
       <span>Diário Oficial do Estado do Rio de Janeiro</span>
     </a>
+<?php if ($ultima = Acervo::ultimaEdicao()): ?>
+    <span class="cabecalho__atualizado">Atualizado até o Diário de <time datetime="<?= e($ultima) ?>"><?= e(data_br($ultima)) ?></time></span>
+<?php endif; ?>
   </div>
 <?php if (!empty($paineis)): ?>
   <nav class="cabecalho__nav" aria-label="Painéis da área interna">
