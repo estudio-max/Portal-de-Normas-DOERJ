@@ -54,8 +54,14 @@ depois que o certificado renovar uma vez sem problema.
 
 ### O banco
 
-`fanara87_doerj`, carregado em 2026-09-23 com 2.012 atos, 3.099 classificações,
-23 relações e 8 edições.
+`fanara87_doerj`, recarregado em 2026-09-26 com o acervo de 547 edições (até
+22/09/2026, 121.022 atos) e a chave `(edicao_id, id_ioerj)` da migração `011`;
+o cron completou 23 a 25/09, e o banco ficou com 121.915 atos em 550 edições.
+O backup anterior é `~/doerj-backup-20260926-0842.sql.gz`.
+
+O SSH da HostGator derruba conexões seguidas: depois de uma sessão, as próximas
+são recusadas por alguns minutos. Junte os comandos numa conexão só, e rode
+carga longa com `setsid nohup`, para não depender da sessão ficar aberta.
 
 O usuário MySQL é o **mesmo do portal da UFF**, `fanara87_UFFN0rm4s`, por
 decisão de quem responde pela conta. Vale saber o que isso implica: a mesma
